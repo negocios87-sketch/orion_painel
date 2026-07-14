@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Board Academy — Orion · Atividades</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0B1120; --surface:#111827; --surf2:#162032; --border:#1F2D45;
+  --gold:#C9A84C; --goldd:#6B5523; --text:#F1F5F9; --muted:#64748B;
+  --ok:#34D399; --warn:#FBBF24; --crit:#F87171;
+  --mono:'Space Mono',monospace; --sans:'DM Sans',sans-serif;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;display:flex;flex-direction:column}
+
+/* ── HEADER ── */
+.header{background:#080E1A;border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brand-name{font-family:var(--mono);font-size:.95rem;font-weight:700;color:var(--gold);letter-spacing:4px;text-transform:uppercase}
+.brand-sub{font-size:.58rem;color:var(--muted);letter-spacing:2px;margin-top:3px}
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ctl-date{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:7px 12px;font-family:var(--mono);font-size:.8rem;cursor:pointer;outline:none;color-scheme:dark}
+.btn{background:var(--surface);color:var(--gold);border:1px solid var(--border);border-radius:7px;padding:7px 16px;font-family:var(--sans);font-size:.75rem;font-weight:700;cursor:pointer;letter-spacing:1px;transition:all .15s}
+.btn:hover{border-color:var(--gold)}
+.btn.primary{background:var(--gold);color:#000;border-color:var(--gold)}
+.btn.primary:disabled{opacity:.35;cursor:default}
+.refresh-ts{font-family:var(--mono);font-size:.62rem;color:var(--muted)}
+.refresh-ts b{color:var(--gold);font-weight:400}
+
+/* ── KPIs ── */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px;padding:16px 28px 0}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px 14px;text-align:center}
+.kpi-lbl{font-size:.52rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;display:block;margin-bottom:5px}
+.kpi-val{font-family:var(--mono);font-size:1.45rem;font-weight:700;color:var(--gold)}
+.kpi.neg .kpi-val{color:var(--crit)}
+
+/* ── AVISOS ── */
+.aviso{margin:12px 28px 0;padding:9px 14px;border-radius:7px;font-size:.68rem;display:none}
+.aviso.on{display:block}
+.aviso.amarelo{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.35);color:var(--warn)}
+.aviso.vermelho{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.35);color:var(--crit)}
+
+/* ── TABELA ── */
+.tbl-wrap{flex:1;overflow:auto;padding:16px 28px 28px}
+table{width:100%;border-collapse:separate;border-spacing:0 3px}
+thead th{font-family:var(--mono);font-size:.54rem;font-weight:700;color:var(--goldd);letter-spacing:1.8px;text-transform:uppercase;padding:6px 10px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:5}
+thead th:first-child{text-align:left}
+tbody tr{background:var(--surface);animation:rowIn .25s ease both}
+tbody tr:hover{filter:brightness(1.15)}
+tbody td{padding:10px;font-family:var(--mono);font-size:.85rem;text-align:right;border-top:1px solid #0F1929;border-bottom:1px solid #0F1929;white-space:nowrap}
+tbody td:first-child{border-radius:6px 0 0 6px;text-align:left;font-family:var(--sans)}
+tbody td:last-child{border-radius:0 6px 6px 0}
+.nome{font-weight:700;font-size:.82rem}
+.cargo{display:block;font-size:.6rem;color:var(--muted);margin-top:1px}
+.v-zero{color:#334155}
+.v-gold{color:var(--gold);font-weight:700}
+.v-ok{color:var(--ok);font-weight:700}
+.v-neg{color:var(--crit);font-weight:700;background:rgba(248,113,113,.1);border-radius:4px;padding:2px 7px}
+.v-pos{color:var(--warn);font-weight:700}
+
+.inp-prop{width:64px;background:var(--surf2);color:var(--text);border:1px solid var(--border);border-radius:5px;padding:5px 8px;font-family:var(--mono);font-size:.82rem;text-align:right;outline:none;transition:border-color .15s}
+.inp-prop:focus{border-color:var(--gold)}
+.inp-prop.dirty{border-color:var(--warn);background:rgba(251,191,36,.07)}
+
+tfoot td{padding:11px 10px;font-family:var(--mono);font-size:.85rem;font-weight:700;text-align:right;color:var(--gold);border-top:2px solid var(--border);white-space:nowrap}
+tfoot td:first-child{text-align:left;font-family:var(--sans);letter-spacing:2px;text-transform:uppercase;font-size:.68rem}
+
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:70px 0;gap:10px;color:var(--muted)}
+.empty-txt{font-family:var(--mono);font-size:.7rem;letter-spacing:3px;text-transform:uppercase}
+
+.footer{background:#080E1A;border-top:1px solid var(--border);padding:9px 28px;display:flex;justify-content:space-between;font-size:.56rem;color:var(--muted);letter-spacing:1px;flex-wrap:wrap;gap:6px}
+
+@keyframes rowIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:900px){.tbl-wrap{padding:12px 10px 20px}.header,.kpis{padding-left:12px;padding-right:12px}}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div>
+    <div class="brand-name">Board Academy · Orion</div>
+    <div class="brand-sub">ATIVIDADES & ACOMPANHAMENTO DIÁRIO</div>
+  </div>
+  <div class="controls">
+    <input type="date" class="ctl-date" id="ctl-date">
+    <button class="btn" id="btn-hoje">Hoje</button>
+    <button class="btn primary" id="btn-salvar" disabled>Salvar Propostas</button>
+    <span class="refresh-ts">Atualizado: <b id="r-ts">—</b></span>
+  </div>
+</header>
+
+<div class="kpis" id="kpis"></div>
+
+<div class="aviso amarelo" id="aviso-roster"></div>
+<div class="aviso amarelo" id="aviso-mapa"></div>
+<div class="aviso vermelho" id="aviso-erro"></div>
+
+<div class="tbl-wrap" id="tbl-wrap">
+  <div class="empty"><span class="empty-txt">Carregando…</span></div>
+</div>
+
+<footer class="footer">
+  <span>ORION · WPP/LIG/MARCADAS: add_time BRT · AGENDADAS/REALIZADAS: due_date · FECHAMENTOS: won_time BRT</span>
+  <span>NO-SHOW = Agendadas p/ o dia − Realizadas · negativo = due_date não atualizado (erro de processo)</span>
+  <span>Refresh automático a cada 2 min (pausa se houver edição pendente)</span>
+</footer>
+
+<script>
+const REFRESH_S = 120;
+let appData = null;
+let dirty = {};      // {nome: valor} edições pendentes de propostas
+let carregando = false;
+
+const $ = (id) => document.getElementById(id);
+
+function hojeBrt() {
+  const d = new Date(Date.now() - 3 * 3600 * 1000);
+  return d.toISOString().slice(0, 10);
+}
+
+// ── FETCH ────────────────────────────────────────────────────────────
+async function fetchDados() {
+  if (Object.keys(dirty).length > 0) return; // não sobrescreve edição pendente
+  if (carregando) return;
+  carregando = true;
+  try {
+    const dia = $("ctl-date").value || hojeBrt();
+    const r = await fetch("/api/dashboard?date=" + dia);
+    const data = await r.json();
+    if (!r.ok || data.erro) throw new Error(data.erro || "HTTP " + r.status);
+    appData = data;
+    $("aviso-erro").classList.remove("on");
+    render(data);
+  } catch (err) {
+    $("aviso-erro").textContent = "⚠ Erro ao carregar: " + err.message;
+    $("aviso-erro").classList.add("on");
+  } finally {
+    carregando = false;
+  }
+}
+
+// ── RENDER ───────────────────────────────────────────────────────────
+const COLS = [
+  { key: "wpp",            lbl: "WhatsApp" },
+  { key: "call",           lbl: "Ligações" },
+  { key: "marcadas",       lbl: "Reun. Marcadas" },
+  { key: "agendadas_hoje", lbl: "Agend. p/ o Dia" },
+  { key: "realizadas",     lbl: "Realizadas" },
+  { key: "propostas",      lbl: "Propostas ✎" },
+  { key: "fechamentos",    lbl: "Fechamentos" },
+  { key: "no_show",        lbl: "No-Show" },
+];
+
+function fmtVal(key, v) {
+  if (key === "no_show") {
+    if (v < 0) return `<span class="v-neg" title="Negativo = reunião realizada sem due_date atualizado. Erro de processo.">${v}</span>`;
+    if (v > 0) return `<span class="v-pos">${v}</span>`;
+    return `<span class="v-zero">0</span>`;
+  }
+  if (key === "fechamentos" && v > 0) return `<span class="v-ok">${v}</span>`;
+  if (v === 0) return `<span class="v-zero">0</span>`;
+  return `<span class="v-gold">${v}</span>`;
+}
+
+function render(data) {
+  $("r-ts").textContent = data.atualizado_em + " BRT";
+
+  // KPIs (totais do dia)
+  const t = data.totais;
+  $("kpis").innerHTML = COLS.map((c) => `
+    <div class="kpi ${c.key === "no_show" && t[c.key] < 0 ? "neg" : ""}">
+      <span class="kpi-lbl">${c.lbl.replace(" ✎", "")}</span>
+      <span class="kpi-val">${t[c.key]}</span>
+    </div>`).join("");
+
+  // Avisos
+  const avR = $("aviso-roster");
+  if (data.roster_aviso) {
+    avR.textContent = "⚠ " + data.roster_aviso;
+    avR.classList.add("on");
+  } else avR.classList.remove("on");
+
+  const avM = $("aviso-mapa");
+  if (data.nao_mapeados && data.nao_mapeados.length) {
+    avM.textContent =
+      "⚠ Atividades/deals de pessoas fora do roster Orion (ignoradas): " +
+      data.nao_mapeados.join(", ");
+    avM.classList.add("on");
+  } else avM.classList.remove("on");
+
+  if (!data.github_configurado) {
+    $("aviso-erro").textContent =
+      "⚠ GITHUB_TOKEN / GITHUB_REPO não configurados — propostas não vão persistir.";
+    $("aviso-erro").classList.add("on");
+  }
+
+  // Tabela
+  if (!data.linhas.length) {
+    $("tbl-wrap").innerHTML =
+      '<div class="empty"><span class="empty-txt">Nenhum colaborador Orion no roster do mês</span></div>';
+    return;
+  }
+
+  const thead = `<thead><tr><th>Closer / Vendedor</th>${COLS.map(
+    (c) => `<th>${c.lbl}</th>`).join("")}</tr></thead>`;
+
+  const rows = data.linhas.map((l, i) => {
+    const tds = COLS.map((c) => {
+      if (c.key === "propostas") {
+        return `<td><input type="number" min="0" step="1" class="inp-prop"
+          data-nome="${l.nome.replace(/"/g, "&quot;")}" value="${l.propostas}"></td>`;
+      }
+      return `<td>${fmtVal(c.key, l[c.key])}</td>`;
+    }).join("");
+    return `<tr style="animation-delay:${i * 20}ms">
+      <td><span class="nome">${l.nome}</span>${l.cargo ? `<span class="cargo">${l.cargo}</span>` : ""}</td>
+      ${tds}</tr>`;
+  }).join("");
+
+  const tfoot = `<tfoot><tr><td>Total Orion</td>${COLS.map(
+    (c) => `<td>${data.totais[c.key]}</td>`).join("")}</tr></tfoot>`;
+
+  $("tbl-wrap").innerHTML = `<table>${thead}<tbody>${rows}</tbody>${tfoot}</table>`;
+
+  // Listeners de edição
+  document.querySelectorAll(".inp-prop").forEach((inp) => {
+    inp.addEventListener("input", () => {
+      dirty[inp.dataset.nome] = inp.value;
+      inp.classList.add("dirty");
+      $("btn-salvar").disabled = false;
+    });
+  });
+  dirty = {};
+  $("btn-salvar").disabled = true;
+}
+
+// ── SALVAR PROPOSTAS ────────────────────────────────────────────────
+$("btn-salvar").addEventListener("click", async () => {
+  const btn = $("btn-salvar");
+  btn.disabled = true;
+  btn.textContent = "Salvando…";
+  try {
+    const r = await fetch("/api/propostas", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date: $("ctl-date").value || hojeBrt(), values: dirty }),
+    });
+    const data = await r.json();
+    if (!r.ok || data.erro) throw new Error(data.erro || "HTTP " + r.status);
+    dirty = {};
+    btn.textContent = "✓ Salvo";
+    setTimeout(() => { btn.textContent = "Salvar Propostas"; }, 1600);
+    fetchDados();
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = "Salvar Propostas";
+    $("aviso-erro").textContent = "⚠ Erro ao salvar propostas: " + err.message;
+    $("aviso-erro").classList.add("on");
+  }
+});
+
+// ── CONTROLES ───────────────────────────────────────────────────────
+$("ctl-date").value = hojeBrt();
+$("ctl-date").addEventListener("change", () => { dirty = {}; fetchDados(); });
+$("btn-hoje").addEventListener("click", () => {
+  $("ctl-date").value = hojeBrt();
+  dirty = {};
+  fetchDados();
+});
+
+fetchDados();
+setInterval(fetchDados, REFRESH_S * 1000);
+</script>
+</body>
+</html>

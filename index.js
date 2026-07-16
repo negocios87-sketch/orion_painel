@@ -176,7 +176,7 @@ async function fetchRoster() {
 }
 
 // ── PIPEDRIVE ───────────────────────────────────────────────────────
-const FETCH_TIMEOUT_MS = 20000; // nenhum fetch pode pendurar > 20s
+const FETCH_TIMEOUT_MS = 45000; // nenhum fetch pode pendurar > 45s (filtros pesados demoram)
 const MAX_PAGINAS      = 60;    // trava de segurança contra paginação infinita
 
 async function pipeFetch(url, opts = {}, tentativas = 3) {
@@ -205,7 +205,7 @@ async function fetchActivitiesV2(filterId) {
         `Ou o filtro está gigante, ou a API ignorou o filter_id. Verificar filtro no Pipedrive.`
       );
     }
-    const p = new URLSearchParams({ filter_id: filterId, limit: "500" });
+    const p = new URLSearchParams({ filter_id: filterId, limit: "200" });
     if (cursor) p.set("cursor", cursor);
     const r = await pipeFetch(
       "https://api.pipedrive.com/api/v2/activities?" + p.toString(),

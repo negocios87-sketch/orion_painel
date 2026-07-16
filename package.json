@@ -2,8 +2,10 @@
   "name": "orion-dashboard",
   "version": "1.0.0",
   "private": true,
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
-    "express": "^4.19.2"
+    "express": "^4.22.2"
   }
 }

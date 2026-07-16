@@ -18,19 +18,31 @@ app.use(express.json());
 
 // ── FRONTEND servido pelo próprio Express (à prova de config do Vercel) ──
 let HTML_CACHE = null;
+function loadHtml() {
+  if (HTML_CACHE) return HTML_CACHE;
+  const candidatos = [
+    path.join(process.cwd(), "public", "index.html"),
+    path.join(__dirname, "..", "public", "index.html"),
+    path.join(__dirname, "public", "index.html"),
+    "/var/task/public/index.html",
+    "/var/task/api/public/index.html",
+  ];
+  for (const p of candidatos) {
+    try {
+      HTML_CACHE = fs.readFileSync(p, "utf-8");
+      return HTML_CACHE;
+    } catch (e) { /* tenta o próximo */ }
+  }
+  throw new Error(
+    "index.html não encontrado. Caminhos testados: " + candidatos.join(" | ") +
+    " · cwd=" + process.cwd() + " · __dirname=" + __dirname
+  );
+}
 app.get("/", (req, res) => {
   try {
-    if (!HTML_CACHE) {
-      HTML_CACHE = fs.readFileSync(
-        path.join(__dirname, "..", "public", "index.html"),
-        "utf-8"
-      );
-    }
-    res.type("html").send(HTML_CACHE);
+    res.type("html").send(loadHtml());
   } catch (e) {
-    res
-      .status(500)
-      .send("index.html não encontrado no bundle: " + e.message);
+    res.status(500).send(String(e.message));
   }
 });
 

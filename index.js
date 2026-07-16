@@ -11,8 +11,28 @@
 // ═══════════════════════════════════════════════════════════════════
 
 const express = require("express");
+const fs = require("fs");
+const path = require("path");
 const app = express();
 app.use(express.json());
+
+// ── FRONTEND servido pelo próprio Express (à prova de config do Vercel) ──
+let HTML_CACHE = null;
+app.get("/", (req, res) => {
+  try {
+    if (!HTML_CACHE) {
+      HTML_CACHE = fs.readFileSync(
+        path.join(__dirname, "..", "public", "index.html"),
+        "utf-8"
+      );
+    }
+    res.type("html").send(HTML_CACHE);
+  } catch (e) {
+    res
+      .status(500)
+      .send("index.html não encontrado no bundle: " + e.message);
+  }
+});
 
 // ── CONFIG ──────────────────────────────────────────────────────────
 const PIPEDRIVE_TOKEN = process.env.PIPEDRIVE_TOKEN || "";

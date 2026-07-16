@@ -117,7 +117,7 @@ function parseMesAno(val) {
 }
 
 async function fetchRoster() {
-  const r = await fetch(URL_COLAB);
+  const r = await fetch(URL_COLAB, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   if (!r.ok) throw new Error("Falha ao ler URL_COLAB: HTTP " + r.status);
   const rows = parseCsv(await r.text());
   if (!rows.length) return { nomes: [], aviso: "planilha vazia" };
@@ -176,23 +176,36 @@ async function fetchRoster() {
 }
 
 // ── PIPEDRIVE ───────────────────────────────────────────────────────
+const FETCH_TIMEOUT_MS = 20000; // nenhum fetch pode pendurar > 20s
+const MAX_PAGINAS      = 60;    // trava de segurança contra paginação infinita
+
 async function pipeFetch(url, opts = {}, tentativas = 3) {
   for (let t = 0; t < tentativas; t++) {
     try {
-      const r = await fetch(url, opts);
+      const r = await fetch(url, {
+        ...opts,
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      });
       if (r.status < 500) return r;
-    } catch (e) { /* retry */ }
+    } catch (e) { /* timeout ou rede — retry */ }
     if (t < tentativas - 1) await new Promise((res) => setTimeout(res, 1500));
   }
-  throw new Error("Pipedrive 5xx persistente: " + url.split("?")[0]);
+  throw new Error("Pipedrive sem resposta (timeout/5xx): " + url.split("?")[0]);
 }
 
-// v2 activities — cursor pagination
+// v2 activities — cursor pagination (com trava de segurança)
 async function fetchActivitiesV2(filterId) {
   const out = [];
-  let cursor = null;
+  let cursor = null, paginas = 0;
   while (true) {
-    const p = new URLSearchParams({ filter_id: filterId, limit: "200" });
+    paginas++;
+    if (paginas > MAX_PAGINAS) {
+      throw new Error(
+        `Filtro ${filterId} estourou ${MAX_PAGINAS} páginas (${out.length}+ atividades). ` +
+        `Ou o filtro está gigante, ou a API ignorou o filter_id. Verificar filtro no Pipedrive.`
+      );
+    }
+    const p = new URLSearchParams({ filter_id: filterId, limit: "500" });
     if (cursor) p.set("cursor", cursor);
     const r = await pipeFetch(
       "https://api.pipedrive.com/api/v2/activities?" + p.toString(),
@@ -204,14 +217,21 @@ async function fetchActivitiesV2(filterId) {
     cursor = data.additional_data && data.additional_data.next_cursor;
     if (!cursor) break;
   }
+  out._paginas = paginas;
   return out;
 }
 
-// v1 deals — start pagination
+// v1 deals — start pagination (com trava de segurança)
 async function fetchDealsV1(filterId) {
   const out = [];
-  let start = 0;
+  let start = 0, paginas = 0;
   while (true) {
+    paginas++;
+    if (paginas > MAX_PAGINAS) {
+      throw new Error(
+        `Filtro de deals ${filterId} estourou ${MAX_PAGINAS} páginas (${out.length}+ deals). Verificar filtro.`
+      );
+    }
     const p = new URLSearchParams({
       filter_id: filterId,
       api_token: PIPEDRIVE_TOKEN,
@@ -227,6 +247,7 @@ async function fetchDealsV1(filterId) {
     if (!pag || !pag.more_items_in_collection) break;
     start += 500;
   }
+  out._paginas = paginas;
   return out;
 }
 
@@ -247,6 +268,7 @@ const GH_API = "https://api.github.com";
 async function ghGetFile() {
   if (!GITHUB_TOKEN || !GITHUB_REPO) return { json: {}, sha: null, configurado: false };
   const r = await fetch(`${GH_API}/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}`, {
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     headers: {
       Authorization: "Bearer " + GITHUB_TOKEN,
       Accept: "application/vnd.github+json",
@@ -283,6 +305,34 @@ async function ghPutFile(json, sha) {
     throw new Error("GitHub PUT: HTTP " + r.status + " · " + txt.slice(0, 200));
   }
 }
+
+// ── DEBUG: cronometra cada fonte isoladamente ───────────────────────
+app.get("/api/debug", async (req, res) => {
+  const resultado = {};
+  async function medir(nome, fn) {
+    const t0 = Date.now();
+    try {
+      const data = await fn();
+      resultado[nome] = {
+        ok: true,
+        ms: Date.now() - t0,
+        itens: Array.isArray(data) ? data.length
+             : data && data.nomes ? data.nomes.length
+             : data ? Object.keys(data).length : 0,
+        paginas: (data && data._paginas) || undefined,
+      };
+    } catch (e) {
+      resultado[nome] = { ok: false, ms: Date.now() - t0, erro: String(e.message || e) };
+    }
+  }
+  await medir("roster_planilha", fetchRoster);
+  await medir("users", fetchUsers);
+  await medir("ativ_geral_1670288", () => fetchActivitiesV2(FILTER_ATIV_GERAL));
+  await medir("ativ_realizadas_1670289", () => fetchActivitiesV2(FILTER_REU_REALIZADAS));
+  await medir("deals_won_1670292", () => fetchDealsV1(FILTER_DEALS_WON));
+  await medir("github_propostas", ghGetFile);
+  res.json(resultado);
+});
 
 // ── ENDPOINT PRINCIPAL ──────────────────────────────────────────────
 app.get("/api/dashboard", async (req, res) => {

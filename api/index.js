@@ -431,3 +431,11 @@ app.get("/api/health", (req, res) =>
 );
 
 module.exports = app;
+
+// ── EXECUÇÃO DIRETA (local ou runtime que usa PORT) ─────────────────
+if (require.main === module) {
+  const port = process.env.PORT || 3000;
+  app.listen(port, () =>
+    console.log("Painel Orion rodando em http://localhost:" + port)
+  );
+}

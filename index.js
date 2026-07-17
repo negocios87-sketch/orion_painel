@@ -149,7 +149,7 @@ async function fetchRoster() {
     if (!row || row.length <= Math.max(iNome, iTime)) continue;
     const nome = (row[iNome] || "").trim();
     if (!nome || normName(nome) === "nome") continue;
-    if (normName(row[iTime]) !== TIME_ALVO) continue;
+    if (!normName(row[iTime]).includes(TIME_ALVO)) continue;
 
     // Filtro de mês/ano atual (se as colunas existirem)
     if (temColunaMes) {
@@ -305,6 +305,55 @@ async function ghPutFile(json, sha) {
     throw new Error("GitHub PUT: HTTP " + r.status + " · " + txt.slice(0, 200));
   }
 }
+
+// ── DEBUG DO ROSTER: raio-X da planilha ─────────────────────────────
+app.get("/api/roster_debug", async (req, res) => {
+  try {
+    const r = await fetch(URL_COLAB, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+    const rows = parseCsv(await r.text());
+    const header = rows[0] || [];
+    const headerNorm = header.map(normName);
+    const idx = (names, fallback) => {
+      for (const n of names) {
+        const i = headerNorm.findIndex((h) => h === n || h.includes(n));
+        if (i >= 0) return i;
+      }
+      return fallback;
+    };
+    const iNome = idx(["nome"], 0);
+    const iTime = idx(["time", "equipe", "squad"], 2);
+    const iMes  = idx(["mes"], -1);
+    const iAno  = idx(["ano"], -1);
+
+    // Valores distintos da coluna time + amostra de linhas
+    const timesDistintos = {};
+    for (let li = 1; li < rows.length; li++) {
+      const t = normName((rows[li] || [])[iTime]);
+      if (t) timesDistintos[t] = (timesDistintos[t] || 0) + 1;
+    }
+    const amostraMes = [];
+    if (iMes >= 0) {
+      for (let li = 1; li < Math.min(rows.length, 12); li++) {
+        amostraMes.push((rows[li] || [])[iMes]);
+      }
+    }
+
+    const roster = await fetchRoster();
+
+    res.json({
+      total_linhas: rows.length - 1,
+      cabecalho: header,
+      colunas_detectadas: { nome: iNome, time: iTime, mes: iMes, ano: iAno },
+      valores_distintos_coluna_time: timesDistintos,
+      amostra_coluna_mes: amostraMes,
+      primeiras_3_linhas: rows.slice(1, 4),
+      roster_final: roster.nomes,
+      roster_aviso: roster.aviso,
+    });
+  } catch (err) {
+    res.status(500).json({ erro: String(err.message || err) });
+  }
+});
 
 // ── DEBUG: cronometra cada fonte isoladamente ───────────────────────
 app.get("/api/debug", async (req, res) => {

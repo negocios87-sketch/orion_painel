@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
 // Board Academy — Painel Orion · Atividades & Taxa de Conexão (V1)
-// >>> VERSAO: 2026-07-20-MAPA-FINAL <<<  (roster lê coluna Subarea)
+// >>> VERSAO: 2026-07-20-CACHE <<<  (roster lê coluna Subarea)
 // Backend Node/Express — deploy Vercel (serverless)
 //
 // Env vars obrigatórias (configurar no Vercel):
@@ -237,7 +237,7 @@ async function fetchActivitiesV2(filterId) {
         `Ou o filtro está gigante, ou a API ignorou o filter_id. Verificar filtro no Pipedrive.`
       );
     }
-    const p = new URLSearchParams({ filter_id: filterId, limit: "200" });
+    const p = new URLSearchParams({ filter_id: filterId, limit: "500" });
     if (cursor) p.set("cursor", cursor);
     const r = await pipeFetch(
       "https://api.pipedrive.com/api/v2/activities?" + p.toString(),
@@ -292,6 +292,20 @@ async function fetchUsers() {
   const map = {};
   for (const u of data.data || []) map[u.id] = u.name;
   return map;
+}
+
+// ── CACHE EM MEMÓRIA (sobrevive enquanto a função Vercel fica quente) ──
+const _cache = {};
+const CACHE_TTL_MS = 3 * 60 * 1000; // 3 min — casa com o refresh de 2 min do painel
+
+async function cached(chave, fn) {
+  const now = Date.now();
+  if (_cache[chave] && now - _cache[chave].ts < CACHE_TTL_MS) {
+    return _cache[chave].data;
+  }
+  const data = await fn();
+  _cache[chave] = { data, ts: now };
+  return data;
 }
 
 // ── GITHUB (persistência das propostas) ─────────────────────────────
@@ -479,11 +493,11 @@ app.get("/api/dashboard", async (req, res) => {
 
     const [roster, users, ativGeral, ativRealizadas, dealsWon, gh] =
       await Promise.all([
-        fetchRoster(),
-        fetchUsers(),
-        fetchActivitiesV2(FILTER_ATIV_GERAL),
-        fetchActivitiesV2(FILTER_REU_REALIZADAS),
-        fetchDealsV1(FILTER_DEALS_WON),
+        cached("roster", fetchRoster),
+        cached("users", fetchUsers),
+        cached("ativ_1670288", () => fetchActivitiesV2(FILTER_ATIV_GERAL)),
+        cached("ativ_1670289", () => fetchActivitiesV2(FILTER_REU_REALIZADAS)),
+        cached("deals_1670292", () => fetchDealsV1(FILTER_DEALS_WON)),
         ghGetFile().catch(() => ({ json: {}, sha: null, configurado: false })),
       ]);
 
@@ -613,7 +627,7 @@ app.post("/api/propostas", async (req, res) => {
 app.get("/api/health", (req, res) =>
   res.json({
     ok: true,
-    versao: "2026-07-20-MAPA-FINAL",
+    versao: "2026-07-20-CACHE",
     pipedrive: !!PIPEDRIVE_TOKEN,
     github: !!(GITHUB_TOKEN && GITHUB_REPO),
   })

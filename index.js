@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
 // Board Academy — Painel Orion · Atividades & Taxa de Conexão (V1)
-// >>> VERSAO: 2026-07-20-CACHE <<<  (roster lê coluna Subarea)
+// >>> VERSAO: 2026-07-20-V1-TEST <<<  (roster lê coluna Subarea)
 // Backend Node/Express — deploy Vercel (serverless)
 //
 // Env vars obrigatórias (configurar no Vercel):
@@ -253,6 +253,37 @@ async function fetchActivitiesV2(filterId) {
   return out;
 }
 
+// v1 activities — start pagination (API v1 é mais tolerante com filtros pesados)
+async function fetchActivitiesV1(filterId) {
+  const out = [];
+  let start = 0, paginas = 0;
+  while (true) {
+    paginas++;
+    if (paginas > MAX_PAGINAS) {
+      throw new Error(
+        `Filtro ${filterId} (v1) estourou ${MAX_PAGINAS} páginas (${out.length}+ atividades). Verificar filtro.`
+      );
+    }
+    const p = new URLSearchParams({
+      filter_id: filterId,
+      api_token: PIPEDRIVE_TOKEN,
+      limit: "500",
+      start: String(start),
+    });
+    const r = await pipeFetch("https://api.pipedrive.com/v1/activities?" + p.toString());
+    if (!r.ok) throw new Error("Atividades v1 filtro " + filterId + ": HTTP " + r.status);
+    const data = await r.json();
+    out.push(...(data.data || []));
+    const pag = data.additional_data && data.additional_data.pagination;
+    if (!pag || !pag.more_items_in_collection) break;
+    start += 500;
+  }
+  out._paginas = paginas;
+  return out;
+  out._paginas = paginas;
+  return out;
+}
+
 // v1 deals — start pagination (com trava de segurança)
 async function fetchDealsV1(filterId) {
   const out = [];
@@ -351,6 +382,36 @@ async function ghPutFile(json, sha) {
     throw new Error("GitHub PUT: HTTP " + r.status + " · " + txt.slice(0, 200));
   }
 }
+
+// ── DEBUG: testa o 1670288 via v1 (alternativa ao v2 que trava) ─────
+app.get("/api/v1_test", async (req, res) => {
+  const t0 = Date.now();
+  try {
+    const ativ = await fetchActivitiesV1(FILTER_ATIV_GERAL);
+    // Amostra de 1 atividade de cada type, com os campos que o painel usa
+    const amostra = {};
+    const porTipo = {};
+    for (const a of ativ) {
+      const t = a.type || "(sem type)";
+      porTipo[t] = (porTipo[t] || 0) + 1;
+      if (!amostra[t]) {
+        amostra[t] = {
+          type: a.type, done: a.done,
+          add_time: a.add_time, due_date: a.due_date,
+          owner_id: a.owner_id, user_id: a.user_id,
+          marked_as_done_time: a.marked_as_done_time,
+        };
+      }
+    }
+    res.json({
+      ok: true, ms: Date.now() - t0, total: ativ.length,
+      paginas: ativ._paginas, contagem_por_type: porTipo,
+      amostra_de_cada_type: amostra,
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, ms: Date.now() - t0, erro: String(err.message || err) });
+  }
+});
 
 // ── DEBUG: types reais e amostra de atividades ──────────────────────
 app.get("/api/tipos_debug", async (req, res) => {
@@ -627,7 +688,7 @@ app.post("/api/propostas", async (req, res) => {
 app.get("/api/health", (req, res) =>
   res.json({
     ok: true,
-    versao: "2026-07-20-CACHE",
+    versao: "2026-07-20-V1-TEST",
     pipedrive: !!PIPEDRIVE_TOKEN,
     github: !!(GITHUB_TOKEN && GITHUB_REPO),
   })

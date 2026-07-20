@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
 // Board Academy — Painel Orion · Atividades & Taxa de Conexão (V1)
-// >>> VERSAO: 2026-07-20-COLLECTION <<<  (roster lê coluna Subarea)
+// >>> VERSAO: 2026-07-20-COLL2 <<<  (roster lê coluna Subarea)
 // Backend Node/Express — deploy Vercel (serverless)
 //
 // Env vars obrigatórias (configurar no Vercel):
@@ -256,7 +256,7 @@ async function fetchActivitiesV2(filterId) {
 // v1 activities/collection — cursor rápido (resolve o filtro que trava na v2)
 async function fetchActivitiesCollection(filterId) {
   const out = [];
-  let cursor = 0, paginas = 0;
+  let cursor = null, paginas = 0;
   while (true) {
     paginas++;
     if (paginas > MAX_PAGINAS) {
@@ -267,9 +267,9 @@ async function fetchActivitiesCollection(filterId) {
     const p = new URLSearchParams({
       filter_id: filterId,
       api_token: PIPEDRIVE_TOKEN,
-      limit: "500",
-      cursor: String(cursor),
+      limit: "100",
     });
+    if (cursor) p.set("cursor", cursor);
     const r = await pipeFetch("https://api.pipedrive.com/v1/activities/collection?" + p.toString());
     if (!r.ok) throw new Error("Collection filtro " + filterId + ": HTTP " + r.status);
     const data = await r.json();
@@ -781,7 +781,7 @@ app.post("/api/propostas", async (req, res) => {
 app.get("/api/health", (req, res) =>
   res.json({
     ok: true,
-    versao: "2026-07-20-COLLECTION",
+    versao: "2026-07-20-COLL2",
     pipedrive: !!PIPEDRIVE_TOKEN,
     github: !!(GITHUB_TOKEN && GITHUB_REPO),
   })

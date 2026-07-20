@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
 // Board Academy — Painel Orion · Atividades & Taxa de Conexão (V1)
-// >>> VERSAO: 2026-07-20-DATATEST <<<  (roster lê coluna Subarea)
+// >>> VERSAO: 2026-07-20-FINAL <<<  (roster lê coluna Subarea)
 // Backend Node/Express — deploy Vercel (serverless)
 //
 // Env vars obrigatórias (configurar no Vercel):
@@ -16,7 +16,7 @@ const app = express();
 app.use(express.json());
 
 // ── FRONTEND EMBUTIDO (sem dependência de arquivos no bundle) ──────
-const HTML = "<!DOCTYPE html>\n<html lang=\"pt-BR\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>Board Academy — Orion · Atividades</title>\n<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap\" rel=\"stylesheet\">\n<style>\n:root {\n  --bg:#0B1120; --surface:#111827; --surf2:#162032; --border:#1F2D45;\n  --gold:#C9A84C; --goldd:#6B5523; --text:#F1F5F9; --muted:#64748B;\n  --ok:#34D399; --warn:#FBBF24; --crit:#F87171;\n  --mono:'Space Mono',monospace; --sans:'DM Sans',sans-serif;\n}\n*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}\nbody{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;display:flex;flex-direction:column}\n\n/* ── HEADER ── */\n.header{background:#080E1A;border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}\n.brand-name{font-family:var(--mono);font-size:.95rem;font-weight:700;color:var(--gold);letter-spacing:4px;text-transform:uppercase}\n.brand-sub{font-size:.58rem;color:var(--muted);letter-spacing:2px;margin-top:3px}\n.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}\n.ctl-date{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:7px 12px;font-family:var(--mono);font-size:.8rem;cursor:pointer;outline:none;color-scheme:dark}\n.btn{background:var(--surface);color:var(--gold);border:1px solid var(--border);border-radius:7px;padding:7px 16px;font-family:var(--sans);font-size:.75rem;font-weight:700;cursor:pointer;letter-spacing:1px;transition:all .15s}\n.btn:hover{border-color:var(--gold)}\n.btn.primary{background:var(--gold);color:#000;border-color:var(--gold)}\n.btn.primary:disabled{opacity:.35;cursor:default}\n.refresh-ts{font-family:var(--mono);font-size:.62rem;color:var(--muted)}\n.refresh-ts b{color:var(--gold);font-weight:400}\n\n/* ── KPIs ── */\n.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px;padding:16px 28px 0}\n.kpi{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px 14px;text-align:center}\n.kpi-lbl{font-size:.52rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;display:block;margin-bottom:5px}\n.kpi-val{font-family:var(--mono);font-size:1.45rem;font-weight:700;color:var(--gold)}\n.kpi.neg .kpi-val{color:var(--crit)}\n\n/* ── AVISOS ── */\n.aviso{margin:12px 28px 0;padding:9px 14px;border-radius:7px;font-size:.68rem;display:none}\n.aviso.on{display:block}\n.aviso.amarelo{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.35);color:var(--warn)}\n.aviso.vermelho{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.35);color:var(--crit)}\n\n/* ── TABELA ── */\n.tbl-wrap{flex:1;overflow:auto;padding:16px 28px 28px}\ntable{width:100%;border-collapse:separate;border-spacing:0 3px}\nthead th{font-family:var(--mono);font-size:.54rem;font-weight:700;color:var(--goldd);letter-spacing:1.8px;text-transform:uppercase;padding:6px 10px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:5}\nthead th:first-child{text-align:left}\ntbody tr{background:var(--surface);animation:rowIn .25s ease both}\ntbody tr:hover{filter:brightness(1.15)}\ntbody td{padding:10px;font-family:var(--mono);font-size:.85rem;text-align:right;border-top:1px solid #0F1929;border-bottom:1px solid #0F1929;white-space:nowrap}\ntbody td:first-child{border-radius:6px 0 0 6px;text-align:left;font-family:var(--sans)}\ntbody td:last-child{border-radius:0 6px 6px 0}\n.nome{font-weight:700;font-size:.82rem}\n.cargo{display:block;font-size:.6rem;color:var(--muted);margin-top:1px}\n.v-zero{color:#334155}\n.v-gold{color:var(--gold);font-weight:700}\n.v-ok{color:var(--ok);font-weight:700}\n.v-neg{color:var(--crit);font-weight:700;background:rgba(248,113,113,.1);border-radius:4px;padding:2px 7px}\n.v-pos{color:var(--warn);font-weight:700}\n\n.inp-prop{width:64px;background:var(--surf2);color:var(--text);border:1px solid var(--border);border-radius:5px;padding:5px 8px;font-family:var(--mono);font-size:.82rem;text-align:right;outline:none;transition:border-color .15s}\n.inp-prop:focus{border-color:var(--gold)}\n.inp-prop.dirty{border-color:var(--warn);background:rgba(251,191,36,.07)}\n\ntfoot td{padding:11px 10px;font-family:var(--mono);font-size:.85rem;font-weight:700;text-align:right;color:var(--gold);border-top:2px solid var(--border);white-space:nowrap}\ntfoot td:first-child{text-align:left;font-family:var(--sans);letter-spacing:2px;text-transform:uppercase;font-size:.68rem}\n\n.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:70px 0;gap:10px;color:var(--muted)}\n.empty-txt{font-family:var(--mono);font-size:.7rem;letter-spacing:3px;text-transform:uppercase}\n\n.footer{background:#080E1A;border-top:1px solid var(--border);padding:9px 28px;display:flex;justify-content:space-between;font-size:.56rem;color:var(--muted);letter-spacing:1px;flex-wrap:wrap;gap:6px}\n\n@keyframes rowIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}\n@media(max-width:900px){.tbl-wrap{padding:12px 10px 20px}.header,.kpis{padding-left:12px;padding-right:12px}}\n</style>\n</head>\n<body>\n\n<header class=\"header\">\n  <div>\n    <div class=\"brand-name\">Board Academy · Orion</div>\n    <div class=\"brand-sub\">ATIVIDADES & ACOMPANHAMENTO DIÁRIO</div>\n  </div>\n  <div class=\"controls\">\n    <input type=\"date\" class=\"ctl-date\" id=\"ctl-date\">\n    <button class=\"btn\" id=\"btn-hoje\">Hoje</button>\n    <button class=\"btn primary\" id=\"btn-salvar\" disabled>Salvar Propostas</button>\n    <span class=\"refresh-ts\">Atualizado: <b id=\"r-ts\">—</b></span>\n  </div>\n</header>\n\n<div class=\"kpis\" id=\"kpis\"></div>\n\n<div class=\"aviso amarelo\" id=\"aviso-roster\"></div>\n<div class=\"aviso amarelo\" id=\"aviso-mapa\"></div>\n<div class=\"aviso vermelho\" id=\"aviso-erro\"></div>\n\n<div class=\"tbl-wrap\" id=\"tbl-wrap\">\n  <div class=\"empty\"><span class=\"empty-txt\">Carregando…</span></div>\n</div>\n\n<footer class=\"footer\">\n  <span>ORION · WPP/LIG/MARCADAS: add_time BRT · AGENDADAS/REALIZADAS: due_date · FECHAMENTOS: won_time BRT</span>\n  <span>NO-SHOW = Agendadas p/ o dia − Realizadas · negativo = due_date não atualizado (erro de processo)</span>\n  <span>Refresh automático a cada 2 min (pausa se houver edição pendente)</span>\n</footer>\n\n<script>\nconst REFRESH_S = 120;\nlet appData = null;\nlet dirty = {};      // {nome: valor} edições pendentes de propostas\nlet carregando = false;\n\nconst $ = (id) => document.getElementById(id);\n\nfunction hojeBrt() {\n  const d = new Date(Date.now() - 3 * 3600 * 1000);\n  return d.toISOString().slice(0, 10);\n}\n\n// ── FETCH ────────────────────────────────────────────────────────────\nasync function fetchDados() {\n  if (Object.keys(dirty).length > 0) return; // não sobrescreve edição pendente\n  if (carregando) return;\n  carregando = true;\n  try {\n    const dia = $(\"ctl-date\").value || hojeBrt();\n    const r = await fetch(\"/api/dashboard?date=\" + dia);\n    const data = await r.json();\n    if (!r.ok || data.erro) throw new Error(data.erro || \"HTTP \" + r.status);\n    appData = data;\n    $(\"aviso-erro\").classList.remove(\"on\");\n    render(data);\n  } catch (err) {\n    $(\"aviso-erro\").textContent = \"⚠ Erro ao carregar: \" + err.message;\n    $(\"aviso-erro\").classList.add(\"on\");\n  } finally {\n    carregando = false;\n  }\n}\n\n// ── RENDER ───────────────────────────────────────────────────────────\nconst COLS = [\n  { key: \"wpp\",            lbl: \"WhatsApp\" },\n  { key: \"call\",           lbl: \"Ligações\" },\n  { key: \"marcadas\",       lbl: \"Reun. Marcadas\" },\n  { key: \"agendadas_hoje\", lbl: \"Agend. p/ o Dia\" },\n  { key: \"realizadas\",     lbl: \"Realizadas\" },\n  { key: \"propostas\",      lbl: \"Propostas ✎\" },\n  { key: \"fechamentos\",    lbl: \"Fechamentos\" },\n  { key: \"no_show\",        lbl: \"No-Show\" },\n];\n\nfunction fmtVal(key, v) {\n  if (key === \"no_show\") {\n    if (v < 0) return `<span class=\"v-neg\" title=\"Negativo = reunião realizada sem due_date atualizado. Erro de processo.\">${v}</span>`;\n    if (v > 0) return `<span class=\"v-pos\">${v}</span>`;\n    return `<span class=\"v-zero\">0</span>`;\n  }\n  if (key === \"fechamentos\" && v > 0) return `<span class=\"v-ok\">${v}</span>`;\n  if (v === 0) return `<span class=\"v-zero\">0</span>`;\n  return `<span class=\"v-gold\">${v}</span>`;\n}\n\nfunction render(data) {\n  $(\"r-ts\").textContent = data.atualizado_em + \" BRT\";\n\n  // KPIs (totais do dia)\n  const t = data.totais;\n  $(\"kpis\").innerHTML = COLS.map((c) => `\n    <div class=\"kpi ${c.key === \"no_show\" && t[c.key] < 0 ? \"neg\" : \"\"}\">\n      <span class=\"kpi-lbl\">${c.lbl.replace(\" ✎\", \"\")}</span>\n      <span class=\"kpi-val\">${t[c.key]}</span>\n    </div>`).join(\"\");\n\n  // Avisos\n  const avR = $(\"aviso-roster\");\n  if (data.roster_aviso) {\n    avR.textContent = \"⚠ \" + data.roster_aviso;\n    avR.classList.add(\"on\");\n  } else avR.classList.remove(\"on\");\n\n  const avM = $(\"aviso-mapa\");\n  if (data.nao_mapeados && data.nao_mapeados.length) {\n    avM.textContent =\n      \"⚠ Atividades/deals de pessoas fora do roster Orion (ignoradas): \" +\n      data.nao_mapeados.join(\", \");\n    avM.classList.add(\"on\");\n  } else avM.classList.remove(\"on\");\n\n  if (!data.github_configurado) {\n    $(\"aviso-erro\").textContent =\n      \"⚠ GITHUB_TOKEN / GITHUB_REPO não configurados — propostas não vão persistir.\";\n    $(\"aviso-erro\").classList.add(\"on\");\n  }\n\n  // Tabela\n  if (!data.linhas.length) {\n    $(\"tbl-wrap\").innerHTML =\n      '<div class=\"empty\"><span class=\"empty-txt\">Nenhum colaborador Orion no roster do mês</span></div>';\n    return;\n  }\n\n  const thead = `<thead><tr><th>Closer / Vendedor</th>${COLS.map(\n    (c) => `<th>${c.lbl}</th>`).join(\"\")}</tr></thead>`;\n\n  const rows = data.linhas.map((l, i) => {\n    const tds = COLS.map((c) => {\n      if (c.key === \"propostas\") {\n        return `<td><input type=\"number\" min=\"0\" step=\"1\" class=\"inp-prop\"\n          data-nome=\"${l.nome.replace(/\"/g, \"&quot;\")}\" value=\"${l.propostas}\"></td>`;\n      }\n      return `<td>${fmtVal(c.key, l[c.key])}</td>`;\n    }).join(\"\");\n    return `<tr style=\"animation-delay:${i * 20}ms\">\n      <td><span class=\"nome\">${l.nome}</span>${l.cargo ? `<span class=\"cargo\">${l.cargo}</span>` : \"\"}</td>\n      ${tds}</tr>`;\n  }).join(\"\");\n\n  const tfoot = `<tfoot><tr><td>Total Orion</td>${COLS.map(\n    (c) => `<td>${data.totais[c.key]}</td>`).join(\"\")}</tr></tfoot>`;\n\n  $(\"tbl-wrap\").innerHTML = `<table>${thead}<tbody>${rows}</tbody>${tfoot}</table>`;\n\n  // Listeners de edição\n  document.querySelectorAll(\".inp-prop\").forEach((inp) => {\n    inp.addEventListener(\"input\", () => {\n      dirty[inp.dataset.nome] = inp.value;\n      inp.classList.add(\"dirty\");\n      $(\"btn-salvar\").disabled = false;\n    });\n  });\n  dirty = {};\n  $(\"btn-salvar\").disabled = true;\n}\n\n// ── SALVAR PROPOSTAS ────────────────────────────────────────────────\n$(\"btn-salvar\").addEventListener(\"click\", async () => {\n  const btn = $(\"btn-salvar\");\n  btn.disabled = true;\n  btn.textContent = \"Salvando…\";\n  try {\n    const r = await fetch(\"/api/propostas\", {\n      method: \"POST\",\n      headers: { \"Content-Type\": \"application/json\" },\n      body: JSON.stringify({ date: $(\"ctl-date\").value || hojeBrt(), values: dirty }),\n    });\n    const data = await r.json();\n    if (!r.ok || data.erro) throw new Error(data.erro || \"HTTP \" + r.status);\n    dirty = {};\n    btn.textContent = \"✓ Salvo\";\n    setTimeout(() => { btn.textContent = \"Salvar Propostas\"; }, 1600);\n    fetchDados();\n  } catch (err) {\n    btn.disabled = false;\n    btn.textContent = \"Salvar Propostas\";\n    $(\"aviso-erro\").textContent = \"⚠ Erro ao salvar propostas: \" + err.message;\n    $(\"aviso-erro\").classList.add(\"on\");\n  }\n});\n\n// ── CONTROLES ───────────────────────────────────────────────────────\n$(\"ctl-date\").value = hojeBrt();\n$(\"ctl-date\").addEventListener(\"change\", () => { dirty = {}; fetchDados(); });\n$(\"btn-hoje\").addEventListener(\"click\", () => {\n  $(\"ctl-date\").value = hojeBrt();\n  dirty = {};\n  fetchDados();\n});\n\nfetchDados();\nsetInterval(fetchDados, REFRESH_S * 1000);\n</script>\n</body>\n</html>\n";
+const HTML = "<!DOCTYPE html>\n<html lang=\"pt-BR\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>Board Academy — Orion · Atividades</title>\n<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap\" rel=\"stylesheet\">\n<style>\n:root {\n  --bg:#0B1120; --surface:#111827; --surf2:#162032; --border:#1F2D45;\n  --gold:#C9A84C; --goldd:#6B5523; --text:#F1F5F9; --muted:#64748B;\n  --ok:#34D399; --warn:#FBBF24; --crit:#F87171;\n  --mono:'Space Mono',monospace; --sans:'DM Sans',sans-serif;\n}\n*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}\nbody{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;display:flex;flex-direction:column}\n\n/* ── HEADER ── */\n.header{background:#080E1A;border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}\n.brand-name{font-family:var(--mono);font-size:.95rem;font-weight:700;color:var(--gold);letter-spacing:4px;text-transform:uppercase}\n.brand-sub{font-size:.58rem;color:var(--muted);letter-spacing:2px;margin-top:3px}\n.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}\n.ctl-date{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:7px 12px;font-family:var(--mono);font-size:.8rem;cursor:pointer;outline:none;color-scheme:dark}\n.btn{background:var(--surface);color:var(--gold);border:1px solid var(--border);border-radius:7px;padding:7px 16px;font-family:var(--sans);font-size:.75rem;font-weight:700;cursor:pointer;letter-spacing:1px;transition:all .15s}\n.btn:hover{border-color:var(--gold)}\n.btn.primary{background:var(--gold);color:#000;border-color:var(--gold)}\n.btn.primary:disabled{opacity:.35;cursor:default}\n.refresh-ts{font-family:var(--mono);font-size:.62rem;color:var(--muted)}\n.refresh-ts b{color:var(--gold);font-weight:400}\n\n/* ── KPIs ── */\n.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px;padding:16px 28px 0}\n.kpi{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px 14px;text-align:center}\n.kpi-lbl{font-size:.52rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;display:block;margin-bottom:5px}\n.kpi-val{font-family:var(--mono);font-size:1.45rem;font-weight:700;color:var(--gold)}\n.kpi.neg .kpi-val{color:var(--crit)}\n\n/* ── AVISOS ── */\n.aviso{margin:12px 28px 0;padding:9px 14px;border-radius:7px;font-size:.68rem;display:none}\n.aviso.on{display:block}\n.aviso.amarelo{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.35);color:var(--warn)}\n.aviso.vermelho{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.35);color:var(--crit)}\n\n/* ── TABELA ── */\n.tbl-wrap{flex:1;overflow:auto;padding:16px 28px 28px}\ntable{width:100%;border-collapse:separate;border-spacing:0 3px}\nthead th{font-family:var(--mono);font-size:.54rem;font-weight:700;color:var(--goldd);letter-spacing:1.8px;text-transform:uppercase;padding:6px 10px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:5}\nthead th:first-child{text-align:left}\ntbody tr{background:var(--surface);animation:rowIn .25s ease both}\ntbody tr:hover{filter:brightness(1.15)}\ntbody td{padding:10px;font-family:var(--mono);font-size:.85rem;text-align:right;border-top:1px solid #0F1929;border-bottom:1px solid #0F1929;white-space:nowrap}\ntbody td:first-child{border-radius:6px 0 0 6px;text-align:left;font-family:var(--sans)}\ntbody td:last-child{border-radius:0 6px 6px 0}\n.nome{font-weight:700;font-size:.82rem}\n.cargo{display:block;font-size:.6rem;color:var(--muted);margin-top:1px}\n.v-zero{color:#334155}\n.v-gold{color:var(--gold);font-weight:700}\n.v-ok{color:var(--ok);font-weight:700}\n.v-neg{color:var(--crit);font-weight:700;background:rgba(248,113,113,.1);border-radius:4px;padding:2px 7px}\n.v-pos{color:var(--warn);font-weight:700}\n\n.inp-prop{width:64px;background:var(--surf2);color:var(--text);border:1px solid var(--border);border-radius:5px;padding:5px 8px;font-family:var(--mono);font-size:.82rem;text-align:right;outline:none;transition:border-color .15s}\n.inp-prop:focus{border-color:var(--gold)}\n.inp-prop.dirty{border-color:var(--warn);background:rgba(251,191,36,.07)}\n\ntfoot td{padding:11px 10px;font-family:var(--mono);font-size:.85rem;font-weight:700;text-align:right;color:var(--gold);border-top:2px solid var(--border);white-space:nowrap}\ntfoot td:first-child{text-align:left;font-family:var(--sans);letter-spacing:2px;text-transform:uppercase;font-size:.68rem}\n\n.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:70px 0;gap:10px;color:var(--muted)}\n.empty-txt{font-family:var(--mono);font-size:.7rem;letter-spacing:3px;text-transform:uppercase}\n\n.footer{background:#080E1A;border-top:1px solid var(--border);padding:9px 28px;display:flex;justify-content:space-between;font-size:.56rem;color:var(--muted);letter-spacing:1px;flex-wrap:wrap;gap:6px}\n\n@keyframes rowIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}\n@media(max-width:900px){.tbl-wrap{padding:12px 10px 20px}.header,.kpis{padding-left:12px;padding-right:12px}}\n</style>\n</head>\n<body>\n\n<header class=\"header\">\n  <div>\n    <div class=\"brand-name\">Board Academy · Orion</div>\n    <div class=\"brand-sub\">ATIVIDADES & ACOMPANHAMENTO DIÁRIO</div>\n  </div>\n  <div class=\"controls\">\n    <input type=\"date\" class=\"ctl-date\" id=\"ctl-date\">\n    <button class=\"btn\" id=\"btn-hoje\">Hoje</button>\n    <button class=\"btn primary\" id=\"btn-salvar\" disabled>Salvar Propostas</button>\n    <span class=\"refresh-ts\">Atualizado: <b id=\"r-ts\">—</b></span>\n  </div>\n</header>\n\n<div class=\"kpis\" id=\"kpis\"></div>\n\n<div class=\"aviso amarelo\" id=\"aviso-roster\"></div>\n<div class=\"aviso amarelo\" id=\"aviso-mapa\"></div>\n<div class=\"aviso vermelho\" id=\"aviso-erro\"></div>\n\n<div class=\"tbl-wrap\" id=\"tbl-wrap\">\n  <div class=\"empty\"><span class=\"empty-txt\">Carregando…</span></div>\n</div>\n\n<footer class=\"footer\">\n  <span>ORION · WPP/LIGAÇÕES/REALIZADAS: due_date BRT · MARCADAS: add_time BRT · FECHAMENTOS: won_time BRT</span>\n  <span>NO-SHOW = reunião com due_date hoje NÃO concluída</span>\n  <span>Refresh automático a cada 2 min (pausa se houver edição pendente)</span>\n</footer>\n\n<script>\nconst REFRESH_S = 120;\nlet appData = null;\nlet dirty = {};      // {nome: valor} edições pendentes de propostas\nlet carregando = false;\n\nconst $ = (id) => document.getElementById(id);\n\nfunction hojeBrt() {\n  const d = new Date(Date.now() - 3 * 3600 * 1000);\n  return d.toISOString().slice(0, 10);\n}\n\n// ── FETCH ────────────────────────────────────────────────────────────\nasync function fetchDados() {\n  if (Object.keys(dirty).length > 0) return; // não sobrescreve edição pendente\n  if (carregando) return;\n  carregando = true;\n  try {\n    const dia = $(\"ctl-date\").value || hojeBrt();\n    const r = await fetch(\"/api/dashboard?date=\" + dia);\n    const data = await r.json();\n    if (!r.ok || data.erro) throw new Error(data.erro || \"HTTP \" + r.status);\n    appData = data;\n    $(\"aviso-erro\").classList.remove(\"on\");\n    render(data);\n  } catch (err) {\n    $(\"aviso-erro\").textContent = \"⚠ Erro ao carregar: \" + err.message;\n    $(\"aviso-erro\").classList.add(\"on\");\n  } finally {\n    carregando = false;\n  }\n}\n\n// ── RENDER ───────────────────────────────────────────────────────────\nconst COLS = [\n  { key: \"wpp\",         lbl: \"WhatsApp\" },\n  { key: \"call\",        lbl: \"Ligações\" },\n  { key: \"marcadas\",    lbl: \"Reun. Marcadas\" },\n  { key: \"realizadas\",  lbl: \"Reun. Realizadas\" },\n  { key: \"propostas\",   lbl: \"Propostas ✎\" },\n  { key: \"fechamentos\", lbl: \"Fechamentos\" },\n  { key: \"no_show\",     lbl: \"No-Show\" },\n];\n\nfunction fmtVal(key, v) {\n  if (key === \"no_show\") {\n    if (v > 0) return `<span class=\"v-neg\" title=\"Reunião com due_date hoje que não foi concluída (não-done).\">${v}</span>`;\n    return `<span class=\"v-zero\">0</span>`;\n  }\n  if (key === \"fechamentos\" && v > 0) return `<span class=\"v-ok\">${v}</span>`;\n  if (v === 0) return `<span class=\"v-zero\">0</span>`;\n  return `<span class=\"v-gold\">${v}</span>`;\n}\n\nfunction render(data) {\n  $(\"r-ts\").textContent = data.atualizado_em + \" BRT\";\n\n  // KPIs (totais do dia)\n  const t = data.totais;\n  $(\"kpis\").innerHTML = COLS.map((c) => `\n    <div class=\"kpi ${c.key === \"no_show\" && t[c.key] > 0 ? \"neg\" : \"\"}\">\n      <span class=\"kpi-lbl\">${c.lbl.replace(\" ✎\", \"\")}</span>\n      <span class=\"kpi-val\">${t[c.key]}</span>\n    </div>`).join(\"\");\n\n  // Avisos\n  const avR = $(\"aviso-roster\");\n  if (data.roster_aviso) {\n    avR.textContent = \"⚠ \" + data.roster_aviso;\n    avR.classList.add(\"on\");\n  } else avR.classList.remove(\"on\");\n\n  const avM = $(\"aviso-mapa\");\n  if (data.nao_mapeados && data.nao_mapeados.length) {\n    avM.textContent =\n      \"⚠ Atividades/deals de pessoas fora do roster Orion (ignoradas): \" +\n      data.nao_mapeados.join(\", \");\n    avM.classList.add(\"on\");\n  } else avM.classList.remove(\"on\");\n\n  if (!data.github_configurado) {\n    $(\"aviso-erro\").textContent =\n      \"⚠ GITHUB_TOKEN / GITHUB_REPO não configurados — propostas não vão persistir.\";\n    $(\"aviso-erro\").classList.add(\"on\");\n  }\n\n  // Tabela\n  if (!data.linhas.length) {\n    $(\"tbl-wrap\").innerHTML =\n      '<div class=\"empty\"><span class=\"empty-txt\">Nenhum colaborador Orion no roster do mês</span></div>';\n    return;\n  }\n\n  const thead = `<thead><tr><th>Closer / Vendedor</th>${COLS.map(\n    (c) => `<th>${c.lbl}</th>`).join(\"\")}</tr></thead>`;\n\n  const rows = data.linhas.map((l, i) => {\n    const tds = COLS.map((c) => {\n      if (c.key === \"propostas\") {\n        return `<td><input type=\"number\" min=\"0\" step=\"1\" class=\"inp-prop\"\n          data-nome=\"${l.nome.replace(/\"/g, \"&quot;\")}\" value=\"${l.propostas}\"></td>`;\n      }\n      return `<td>${fmtVal(c.key, l[c.key])}</td>`;\n    }).join(\"\");\n    return `<tr style=\"animation-delay:${i * 20}ms\">\n      <td><span class=\"nome\">${l.nome}</span>${l.cargo ? `<span class=\"cargo\">${l.cargo}</span>` : \"\"}</td>\n      ${tds}</tr>`;\n  }).join(\"\");\n\n  const tfoot = `<tfoot><tr><td>Total Orion</td>${COLS.map(\n    (c) => `<td>${data.totais[c.key]}</td>`).join(\"\")}</tr></tfoot>`;\n\n  $(\"tbl-wrap\").innerHTML = `<table>${thead}<tbody>${rows}</tbody>${tfoot}</table>`;\n\n  // Listeners de edição\n  document.querySelectorAll(\".inp-prop\").forEach((inp) => {\n    inp.addEventListener(\"input\", () => {\n      dirty[inp.dataset.nome] = inp.value;\n      inp.classList.add(\"dirty\");\n      $(\"btn-salvar\").disabled = false;\n    });\n  });\n  dirty = {};\n  $(\"btn-salvar\").disabled = true;\n}\n\n// ── SALVAR PROPOSTAS ────────────────────────────────────────────────\n$(\"btn-salvar\").addEventListener(\"click\", async () => {\n  const btn = $(\"btn-salvar\");\n  btn.disabled = true;\n  btn.textContent = \"Salvando…\";\n  try {\n    const r = await fetch(\"/api/propostas\", {\n      method: \"POST\",\n      headers: { \"Content-Type\": \"application/json\" },\n      body: JSON.stringify({ date: $(\"ctl-date\").value || hojeBrt(), values: dirty }),\n    });\n    const data = await r.json();\n    if (!r.ok || data.erro) throw new Error(data.erro || \"HTTP \" + r.status);\n    dirty = {};\n    btn.textContent = \"✓ Salvo\";\n    setTimeout(() => { btn.textContent = \"Salvar Propostas\"; }, 1600);\n    fetchDados();\n  } catch (err) {\n    btn.disabled = false;\n    btn.textContent = \"Salvar Propostas\";\n    $(\"aviso-erro\").textContent = \"⚠ Erro ao salvar propostas: \" + err.message;\n    $(\"aviso-erro\").classList.add(\"on\");\n  }\n});\n\n// ── CONTROLES ───────────────────────────────────────────────────────\n$(\"ctl-date\").value = hojeBrt();\n$(\"ctl-date\").addEventListener(\"change\", () => { dirty = {}; fetchDados(); });\n$(\"btn-hoje\").addEventListener(\"click\", () => {\n  $(\"ctl-date\").value = hojeBrt();\n  dirty = {};\n  fetchDados();\n});\n\nfetchDados();\nsetInterval(fetchDados, REFRESH_S * 1000);\n</script>\n</body>\n</html>\n";
 app.get("/", (req, res) => res.type("html").send(HTML));
 
 // ── CONFIG ──────────────────────────────────────────────────────────
@@ -253,67 +253,6 @@ async function fetchActivitiesV2(filterId) {
   return out;
 }
 
-// v1 activities/collection — cursor rápido (resolve o filtro que trava na v2)
-async function fetchActivitiesCollection(filterId) {
-  const out = [];
-  let cursor = null, paginas = 0;
-  const TETO_COLLECTION = 200; // 200 págs × 100 = 20 mil atividades de folga
-  while (true) {
-    paginas++;
-    if (paginas > TETO_COLLECTION) {
-      throw new Error(
-        `Filtro ${filterId} (collection) passou de ${TETO_COLLECTION * 100} atividades. Filtro sem recorte de data no Pipedrive?`
-      );
-    }
-    const p = new URLSearchParams({
-      filter_id: filterId,
-      api_token: PIPEDRIVE_TOKEN,
-      limit: "100",
-    });
-    if (cursor) p.set("cursor", cursor);
-    const r = await pipeFetch("https://api.pipedrive.com/v1/activities/collection?" + p.toString());
-    if (!r.ok) throw new Error("Collection filtro " + filterId + ": HTTP " + r.status);
-    const data = await r.json();
-    out.push(...(data.data || []));
-    const nc = data.additional_data && data.additional_data.next_cursor;
-    if (nc === null || nc === undefined || nc === "") break;
-    cursor = nc;
-  }
-  out._paginas = paginas;
-  return out;
-}
-
-// v1 activities — start pagination (API v1 é mais tolerante com filtros pesados)
-async function fetchActivitiesV1(filterId) {
-  const out = [];
-  let start = 0, paginas = 0;
-  while (true) {
-    paginas++;
-    if (paginas > MAX_PAGINAS) {
-      throw new Error(
-        `Filtro ${filterId} (v1) estourou ${MAX_PAGINAS} páginas (${out.length}+ atividades). Verificar filtro.`
-      );
-    }
-    const p = new URLSearchParams({
-      filter_id: filterId,
-      api_token: PIPEDRIVE_TOKEN,
-      limit: "500",
-      start: String(start),
-    });
-    const r = await pipeFetch("https://api.pipedrive.com/v1/activities?" + p.toString());
-    if (!r.ok) throw new Error("Atividades v1 filtro " + filterId + ": HTTP " + r.status);
-    const data = await r.json();
-    out.push(...(data.data || []));
-    const pag = data.additional_data && data.additional_data.pagination;
-    if (!pag || !pag.more_items_in_collection) break;
-    start += 500;
-  }
-  out._paginas = paginas;
-  return out;
-  out._paginas = paginas;
-  return out;
-}
-
 // v1 deals — start pagination (com trava de segurança)
 async function fetchDealsV1(filterId) {
   const out = [];
@@ -412,224 +351,6 @@ async function ghPutFile(json, sha) {
     throw new Error("GitHub PUT: HTTP " + r.status + " · " + txt.slice(0, 200));
   }
 }
-
-// ── DEBUG: v2 filtrando por data nativa (sem filter_id problemático) ─
-app.get("/api/data_test", async (req, res) => {
-  const dia = /^\d{4}-\d{2}-\d{2}$/.test(req.query.date || "") ? req.query.date : todayBrt();
-  async function pega(url, label) {
-    const t0 = Date.now();
-    try {
-      const r = await fetch(url, {
-        signal: AbortSignal.timeout(25000),
-        headers: { "x-api-token": PIPEDRIVE_TOKEN },
-      });
-      const j = await r.json().catch(() => ({}));
-      const itens = j.data || [];
-      const porTipo = {};
-      for (const a of itens) porTipo[a.type || "?"] = (porTipo[a.type || "?"] || 0) + 1;
-      return {
-        label, http: r.status, ms: Date.now() - t0, itens: itens.length,
-        tem_mais: !!(j.additional_data && j.additional_data.next_cursor),
-        por_tipo: porTipo,
-        amostra: itens.slice(0, 3).map((a) => ({
-          type: a.type, done: a.done, add: a.add_time, due: a.due_date,
-          owner: a.owner_id,
-        })),
-      };
-    } catch (e) {
-      return { label, erro: String(e.message || e).slice(0, 100) };
-    }
-  }
-  // v2 aceita filtros de data por parâmetro: due_date (range) e updated_since
-  const b = "https://api.pipedrive.com/api/v2/activities?limit=100";
-  const out = {
-    dia,
-    por_due_date: await pega(`${b}&due_date=${dia}`, "v2 due_date exato"),
-    por_range_due: await pega(`${b}&due_date_start=${dia}&due_date_end=${dia}`, "v2 due_date range"),
-    por_updated: await pega(`${b}&updated_since=${dia}T00:00:00Z`, "v2 updated_since"),
-  };
-  res.json(out);
-});
-
-// ── DEBUG: o collection respeita o filter_id? ───────────────────────
-app.get("/api/filtro_check", async (req, res) => {
-  async function pega(url, label) {
-    const t0 = Date.now();
-    try {
-      const r = await fetch(url, { signal: AbortSignal.timeout(20000) });
-      const j = await r.json().catch(() => ({}));
-      const itens = j.data || [];
-      // amostra de datas para ver o range real
-      const datas = itens.slice(0, 5).map((a) => ({
-        add: a.add_time, due: a.due_date, type: a.type,
-      }));
-      return {
-        label, http: r.status, ms: Date.now() - t0,
-        itens_nesta_pagina: itens.length,
-        next_cursor: (j.additional_data && j.additional_data.next_cursor) || null,
-        amostra_datas: datas,
-      };
-    } catch (e) {
-      return { label, erro: String(e.message || e).slice(0, 80) };
-    }
-  }
-  const base = "https://api.pipedrive.com/v1/activities/collection?api_token=" + PIPEDRIVE_TOKEN + "&limit=100";
-  const out = {
-    com_filtro:  await pega(base + "&filter_id=" + FILTER_ATIV_GERAL, "COM filter_id 1670288"),
-    sem_filtro:  await pega(base, "SEM filter_id (conta toda)"),
-    filtro_1670289: await pega(base + "&filter_id=" + FILTER_REU_REALIZADAS, "COM filter_id 1670289 (o que funciona)"),
-  };
-  res.json(out);
-});
-
-// ── DEBUG: valida o collection completo (total, types, campos) ──────
-app.get("/api/collection_test", async (req, res) => {
-  const t0 = Date.now();
-  try {
-    const ativ = await fetchActivitiesCollection(FILTER_ATIV_GERAL);
-    const porTipo = {}, amostra = {};
-    let semDue = 0, semOwner = 0, semType = 0;
-    for (const a of ativ) {
-      const t = a.type || "(sem type)";
-      porTipo[t] = (porTipo[t] || 0) + 1;
-      if (!a.due_date) semDue++;
-      if (!(a.owner_id || a.user_id)) semOwner++;
-      if (!a.type) semType++;
-      if (!amostra[t]) {
-        amostra[t] = {
-          type: a.type, done: a.done, status: a.status,
-          add_time: a.add_time, due_date: a.due_date,
-          owner_id: a.owner_id, user_id: a.user_id,
-        };
-      }
-    }
-    res.json({
-      ok: true, ms: Date.now() - t0, total: ativ.length, paginas: ativ._paginas,
-      contagem_por_type: porTipo,
-      campos_faltando: { sem_due_date: semDue, sem_owner: semOwner, sem_type: semType },
-      amostra_de_cada_type: amostra,
-    });
-  } catch (err) {
-    res.status(500).json({ ok: false, ms: Date.now() - t0, erro: String(err.message || err) });
-  }
-});
-
-// ── DEBUG: descobre como a v1 aceita o filtro de atividades ─────────
-app.get("/api/v1_probe", async (req, res) => {
-  const fid = FILTER_ATIV_GERAL;
-  const variantes = {
-    "filter_id+start": `https://api.pipedrive.com/v1/activities?filter_id=${fid}&api_token=${PIPEDRIVE_TOKEN}&limit=100&start=0`,
-    "filter_id+done0": `https://api.pipedrive.com/v1/activities?filter_id=${fid}&api_token=${PIPEDRIVE_TOKEN}&limit=100&done=0`,
-    "filter_id+done1": `https://api.pipedrive.com/v1/activities?filter_id=${fid}&api_token=${PIPEDRIVE_TOKEN}&limit=100&done=1`,
-    "collection":       `https://api.pipedrive.com/v1/activities/collection?filter_id=${fid}&api_token=${PIPEDRIVE_TOKEN}&limit=100`,
-    "v2_com_done_param": `https://api.pipedrive.com/api/v2/activities?filter_id=${fid}&limit=100&done=true`,
-  };
-  const out = {};
-  for (const [nome, url] of Object.entries(variantes)) {
-    const t0 = Date.now();
-    try {
-      const isV2 = url.includes("/api/v2/");
-      const r = await fetch(url, {
-        signal: AbortSignal.timeout(25000),
-        headers: isV2 ? { "x-api-token": PIPEDRIVE_TOKEN } : {},
-      });
-      const j = await r.json().catch(() => ({}));
-      out[nome] = {
-        http: r.status, ms: Date.now() - t0,
-        itens: (j.data || []).length,
-        tem_mais: !!(j.additional_data && (j.additional_data.pagination?.more_items_in_collection || j.additional_data.next_cursor)),
-      };
-    } catch (e) {
-      out[nome] = { ms: Date.now() - t0, erro: String(e.message || e).slice(0, 80) };
-    }
-  }
-  res.json(out);
-});
-
-// ── DEBUG: testa o 1670288 via v1 (alternativa ao v2 que trava) ─────
-app.get("/api/v1_test", async (req, res) => {
-  const t0 = Date.now();
-  try {
-    const ativ = await fetchActivitiesV1(FILTER_ATIV_GERAL);
-    // Amostra de 1 atividade de cada type, com os campos que o painel usa
-    const amostra = {};
-    const porTipo = {};
-    for (const a of ativ) {
-      const t = a.type || "(sem type)";
-      porTipo[t] = (porTipo[t] || 0) + 1;
-      if (!amostra[t]) {
-        amostra[t] = {
-          type: a.type, done: a.done,
-          add_time: a.add_time, due_date: a.due_date,
-          owner_id: a.owner_id, user_id: a.user_id,
-          marked_as_done_time: a.marked_as_done_time,
-        };
-      }
-    }
-    res.json({
-      ok: true, ms: Date.now() - t0, total: ativ.length,
-      paginas: ativ._paginas, contagem_por_type: porTipo,
-      amostra_de_cada_type: amostra,
-    });
-  } catch (err) {
-    res.status(500).json({ ok: false, ms: Date.now() - t0, erro: String(err.message || err) });
-  }
-});
-
-// ── DEBUG: types reais e amostra de atividades ──────────────────────
-app.get("/api/tipos_debug", async (req, res) => {
-  try {
-    const dia = /^\d{4}-\d{2}-\d{2}$/.test(req.query.date || "")
-      ? req.query.date : todayBrt();
-    const ativGeral = await fetchActivitiesV2(FILTER_ATIV_GERAL);
-
-    // Contagem por type
-    const porTipo = {};
-    const porTipoDone = {};
-    for (const a of ativGeral) {
-      const t = a.type || "(sem type)";
-      porTipo[t] = (porTipo[t] || 0) + 1;
-      const chave = (a.done === true || a.status === "done") ? "done" : "aberto";
-      porTipoDone[t] = porTipoDone[t] || { done: 0, aberto: 0 };
-      porTipoDone[t][chave]++;
-    }
-
-    // Amostra: 1 atividade de cada type, com os campos que o painel usa
-    const amostraPorTipo = {};
-    for (const a of ativGeral) {
-      const t = a.type || "(sem type)";
-      if (!amostraPorTipo[t]) {
-        amostraPorTipo[t] = {
-          type: a.type,
-          done: a.done,
-          status: a.status,
-          add_time: a.add_time,
-          add_time_brt: utcToBrtDateStr(a.add_time),
-          due_date: a.due_date,
-          due_date_puro: pureDate(a.due_date),
-          owner_id: a.owner_id,
-          user_id: a.user_id,
-        };
-      }
-    }
-
-    // Quantas atividades caem no dia por eixo
-    const noAddTime = ativGeral.filter((a) => utcToBrtDateStr(a.add_time) === dia).length;
-    const noDueDate = ativGeral.filter((a) => pureDate(a.due_date) === dia).length;
-
-    res.json({
-      dia,
-      total_atividades_filtro_1670288: ativGeral.length,
-      contagem_por_type: porTipo,
-      done_vs_aberto_por_type: porTipoDone,
-      no_dia_por_add_time: noAddTime,
-      no_dia_por_due_date: noDueDate,
-      amostra_de_cada_type: amostraPorTipo,
-    });
-  } catch (err) {
-    res.status(500).json({ erro: String(err.message || err) });
-  }
-});
 
 // ── DEBUG DO ROSTER: raio-X da planilha ─────────────────────────────
 app.get("/api/roster_debug", async (req, res) => {
@@ -730,7 +451,7 @@ app.get("/api/dashboard", async (req, res) => {
     for (const p of roster.nomes) rosterIdx[normName(p.nome)] = p.nome;
 
     const zero = () => ({
-      wpp: 0, call: 0, marcadas: 0, agendadas_hoje: 0,
+      wpp: 0, call: 0, marcadas: 0,
       realizadas: 0, propostas: 0, fechamentos: 0, no_show: 0,
     });
     const acc = {};
@@ -747,8 +468,8 @@ app.get("/api/dashboard", async (req, res) => {
 
     const isDone = (a) => a.done === true || a.status === "done";
 
-    // ── Filtro 1670288 (ativGeral): wpp / call / marcadas / realizadas ──
-    //    Eixo: due_date para TODAS. Status independe só para "marcadas".
+    // ── Filtro 1670288 (ativGeral): wpp / call / realizadas / no-show ──
+    //    Eixo: due_date = hoje para todas.
     for (const a of ativGeral) {
       const nome = resolve(a.owner_id || a.user_id);
       if (!nome) continue;
@@ -759,18 +480,18 @@ app.get("/api/dashboard", async (req, res) => {
       if (tipo === "whatsapp_chat" && isDone(a)) acc[nome].wpp++;
       if (tipo === "call" && isDone(a)) acc[nome].call++;
       if (tipo === "meeting") {
-        acc[nome].marcadas++;                    // status independe
         if (isDone(a)) acc[nome].realizadas++;   // realizada = meeting done
+        else acc[nome].no_show++;                // no-show = due hoje e NÃO done
       }
     }
 
-    // ── Filtro 1670289 (ativRealizadas): agendadas ──
-    //    Eixo: add_time (BRT). type=meeting, status independe.
+    // ── Filtro 1670289 (ativRealizadas): Reuniões Marcadas ──
+    //    Eixo: add_time (BRT) = hoje. type=meeting, status independe.
     for (const a of ativRealizadas) {
       if (a.type !== "meeting") continue;
       const nome = resolve(a.owner_id || a.user_id);
       if (!nome) continue;
-      if (utcToBrtDateStr(a.add_time) === dia) acc[nome].agendadas_hoje++;
+      if (utcToBrtDateStr(a.add_time) === dia) acc[nome].marcadas++;
     }
 
     // ── Filtro 1670292: fechamentos (won, eixo won_time BRT) ──
@@ -782,14 +503,13 @@ app.get("/api/dashboard", async (req, res) => {
       if (utcToBrtDateStr(d.won_time) === dia) acc[nome].fechamentos++;
     }
 
-    // ── Propostas (GitHub) + No-Show ──
+    // ── Propostas (GitHub) ──
     const propostasDia = (gh.json && gh.json[dia]) || {};
     for (const nome of Object.keys(acc)) {
       const key = Object.keys(propostasDia).find(
         (k) => normName(k) === normName(nome)
       );
       acc[nome].propostas = key ? Number(propostasDia[key]) || 0 : 0;
-      acc[nome].no_show = acc[nome].agendadas_hoje - acc[nome].realizadas;
     }
 
     const linhas = roster.nomes.map((p) => ({
@@ -851,7 +571,7 @@ app.post("/api/propostas", async (req, res) => {
 app.get("/api/health", (req, res) =>
   res.json({
     ok: true,
-    versao: "2026-07-20-DATATEST",
+    versao: "2026-07-20-FINAL",
     pipedrive: !!PIPEDRIVE_TOKEN,
     github: !!(GITHUB_TOKEN && GITHUB_REPO),
   })

@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
 // Board Academy — Painel Orion · Atividades & Taxa de Conexão (V1)
-// >>> VERSAO: 2026-07-20-COLL3 <<<  (roster lê coluna Subarea)
+// >>> VERSAO: 2026-07-20-FCHECK <<<  (roster lê coluna Subarea)
 // Backend Node/Express — deploy Vercel (serverless)
 //
 // Env vars obrigatórias (configurar no Vercel):
@@ -413,6 +413,37 @@ async function ghPutFile(json, sha) {
   }
 }
 
+// ── DEBUG: o collection respeita o filter_id? ───────────────────────
+app.get("/api/filtro_check", async (req, res) => {
+  async function pega(url, label) {
+    const t0 = Date.now();
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(20000) });
+      const j = await r.json().catch(() => ({}));
+      const itens = j.data || [];
+      // amostra de datas para ver o range real
+      const datas = itens.slice(0, 5).map((a) => ({
+        add: a.add_time, due: a.due_date, type: a.type,
+      }));
+      return {
+        label, http: r.status, ms: Date.now() - t0,
+        itens_nesta_pagina: itens.length,
+        next_cursor: (j.additional_data && j.additional_data.next_cursor) || null,
+        amostra_datas: datas,
+      };
+    } catch (e) {
+      return { label, erro: String(e.message || e).slice(0, 80) };
+    }
+  }
+  const base = "https://api.pipedrive.com/v1/activities/collection?api_token=" + PIPEDRIVE_TOKEN + "&limit=100";
+  const out = {
+    com_filtro:  await pega(base + "&filter_id=" + FILTER_ATIV_GERAL, "COM filter_id 1670288"),
+    sem_filtro:  await pega(base, "SEM filter_id (conta toda)"),
+    filtro_1670289: await pega(base + "&filter_id=" + FILTER_REU_REALIZADAS, "COM filter_id 1670289 (o que funciona)"),
+  };
+  res.json(out);
+});
+
 // ── DEBUG: valida o collection completo (total, types, campos) ──────
 app.get("/api/collection_test", async (req, res) => {
   const t0 = Date.now();
@@ -782,7 +813,7 @@ app.post("/api/propostas", async (req, res) => {
 app.get("/api/health", (req, res) =>
   res.json({
     ok: true,
-    versao: "2026-07-20-COLL3",
+    versao: "2026-07-20-FCHECK",
     pipedrive: !!PIPEDRIVE_TOKEN,
     github: !!(GITHUB_TOKEN && GITHUB_REPO),
   })

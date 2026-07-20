@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
 // Board Academy — Painel Orion · Atividades & Taxa de Conexão (V1)
-// >>> VERSAO: 2026-07-20-SUBAREA-FIX <<<  (roster lê coluna Subarea)
+// >>> VERSAO: 2026-07-20-MAPA-FINAL <<<  (roster lê coluna Subarea)
 // Backend Node/Express — deploy Vercel (serverless)
 //
 // Env vars obrigatórias (configurar no Vercel):
@@ -509,28 +509,30 @@ app.get("/api/dashboard", async (req, res) => {
 
     const isDone = (a) => a.done === true || a.status === "done";
 
-    // ── Filtro 1670288: wpp / call / marcadas / agendadas ──
+    // ── Filtro 1670288 (ativGeral): wpp / call / marcadas / realizadas ──
+    //    Eixo: due_date para TODAS. Status independe só para "marcadas".
     for (const a of ativGeral) {
       const nome = resolve(a.owner_id || a.user_id);
       if (!nome) continue;
       const tipo = a.type;
-      const addBrt = utcToBrtDateStr(a.add_time);
       const due = pureDate(a.due_date);
+      if (due !== dia) continue;
 
-      if (tipo === "whatsapp_chat" && isDone(a) && addBrt === dia) acc[nome].wpp++;
-      if (tipo === "call" && isDone(a) && addBrt === dia) acc[nome].call++;
+      if (tipo === "whatsapp_chat" && isDone(a)) acc[nome].wpp++;
+      if (tipo === "call" && isDone(a)) acc[nome].call++;
       if (tipo === "meeting") {
-        if (addBrt === dia) acc[nome].marcadas++;          // status independe
-        if (due === dia) acc[nome].agendadas_hoje++;       // status independe
+        acc[nome].marcadas++;                    // status independe
+        if (isDone(a)) acc[nome].realizadas++;   // realizada = meeting done
       }
     }
 
-    // ── Filtro 1670289: realizadas (done, eixo due_date) ──
+    // ── Filtro 1670289 (ativRealizadas): agendadas ──
+    //    Eixo: add_time (BRT). type=meeting, status independe.
     for (const a of ativRealizadas) {
-      if (a.type !== "meeting" || !isDone(a)) continue;
+      if (a.type !== "meeting") continue;
       const nome = resolve(a.owner_id || a.user_id);
       if (!nome) continue;
-      if (pureDate(a.due_date) === dia) acc[nome].realizadas++;
+      if (utcToBrtDateStr(a.add_time) === dia) acc[nome].agendadas_hoje++;
     }
 
     // ── Filtro 1670292: fechamentos (won, eixo won_time BRT) ──
@@ -611,7 +613,7 @@ app.post("/api/propostas", async (req, res) => {
 app.get("/api/health", (req, res) =>
   res.json({
     ok: true,
-    versao: "2026-07-20-SUBAREA-FIX",
+    versao: "2026-07-20-MAPA-FINAL",
     pipedrive: !!PIPEDRIVE_TOKEN,
     github: !!(GITHUB_TOKEN && GITHUB_REPO),
   })

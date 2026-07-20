@@ -1,5 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
 // Board Academy — Painel Orion · Atividades & Taxa de Conexão (V1)
+// >>> VERSAO: 2026-07-20-SUBAREA-FIX <<<  (roster lê coluna Subarea)
 // Backend Node/Express — deploy Vercel (serverless)
 //
 // Env vars obrigatórias (configurar no Vercel):
@@ -122,7 +123,8 @@ async function fetchRoster() {
   const rows = parseCsv(await r.text());
   if (!rows.length) return { nomes: [], aviso: "planilha vazia" };
 
-  // Detecta colunas pelo header; fallback posicional (0=nome, 2=time, 3=cargo)
+  // Detecta colunas pelo header.
+  // IMPORTANTE: o squad mora em "Subarea" — "Equipe (Nivel Head)" é o nome da head, não usar.
   const header = rows[0].map(normName);
   const idx = (names, fallback) => {
     for (const n of names) {
@@ -131,48 +133,78 @@ async function fetchRoster() {
     }
     return fallback;
   };
-  const iNome  = idx(["nome"], 0);
-  const iTime  = idx(["time", "equipe", "squad"], 2);
-  const iMes   = idx(["mes"], -1);
-  const iAno   = idx(["ano"], -1);
-  const iCargo = idx(["cargo", "funcao"], 3);
+  const iNome   = idx(["nome"], 0);
+  const iTime   = idx(["subarea", "sub area", "squad"], 2);
+  const iMes    = idx(["mes"], -1);
+  const iAno    = idx(["ano"], -1);
+  const iCargo  = idx(["cargo", "funcao"], 3);
+  const iStatus = idx(["status"], -1);
 
   const hoje = new Date(Date.now() - TZ_OFFSET_H * 3600 * 1000);
   const mesAtual = hoje.getUTCMonth() + 1;
   const anoAtual = hoje.getUTCFullYear();
 
-  const nomes = [];
-  let temColunaMes = iMes >= 0;
-
+  // 1ª passada: coleta TODAS as linhas do squad alvo (ativas), com mês/ano parseado
+  const candidatos = [];
   for (let li = 1; li < rows.length; li++) {
     const row = rows[li];
     if (!row || row.length <= Math.max(iNome, iTime)) continue;
     const nome = (row[iNome] || "").trim();
     if (!nome || normName(nome) === "nome") continue;
     if (!normName(row[iTime]).includes(TIME_ALVO)) continue;
+    if (iStatus >= 0 && !normName(row[iStatus]).includes("ativo")) continue;
 
-    // Filtro de mês/ano atual (se as colunas existirem)
-    if (temColunaMes) {
+    let mes = null, ano = null;
+    if (iMes >= 0) {
       const pm = parseMesAno(row[iMes]);
-      let mes = pm.mes, ano = pm.ano;
-      if (ano === null && iAno >= 0) {
-        const pa = parseMesAno(row[iAno]);
-        ano = pa.ano !== null ? pa.ano : pa.mes; // coluna ano pode vir só "2026"
-      }
-      if (mes !== null && mes !== mesAtual) continue;
-      if (ano !== null && ano !== anoAtual) continue;
+      mes = pm.mes;
+      ano = pm.ano;
     }
-
+    if (ano === null && iAno >= 0) {
+      const pa = parseMesAno(row[iAno]);
+      ano = pa.ano !== null ? pa.ano : pa.mes;
+    }
     const cargo = iCargo >= 0 ? (row[iCargo] || "").trim() : "";
-    if (!nomes.some((n) => normName(n.nome) === normName(nome))) {
-      nomes.push({ nome, cargo });
+    candidatos.push({ nome, cargo, mes, ano });
+  }
+
+  if (!candidatos.length) {
+    return { nomes: [], aviso: `nenhuma linha com subarea "${TIME_ALVO}" (ativa) na planilha` };
+  }
+
+  // 2ª passada: tenta mês/ano atual; se vazio, cai pro mês mais recente disponível
+  const doPeriodo = (m, a) =>
+    candidatos.filter(
+      (c) => (c.mes === null || c.mes === m) && (c.ano === null || c.ano === a)
+    );
+
+  let selecionados = doPeriodo(mesAtual, anoAtual);
+  let aviso = null;
+
+  if (!selecionados.length) {
+    // mês mais recente entre os candidatos (ano*100+mes)
+    const comPeriodo = candidatos.filter((c) => c.mes !== null && c.ano !== null);
+    if (comPeriodo.length) {
+      const melhor = comPeriodo.reduce((acc, c) =>
+        c.ano * 100 + c.mes > acc.ano * 100 + acc.mes ? c : acc
+      );
+      selecionados = doPeriodo(melhor.mes, melhor.ano);
+      aviso = `planilha sem linhas de ${String(mesAtual).padStart(2, "0")}/${anoAtual} — usando roster de ${String(melhor.mes).padStart(2, "0")}/${melhor.ano}`;
+    } else {
+      selecionados = candidatos;
+      aviso = "coluna mês/ano não parseável — roster sem recorte mensal";
     }
   }
 
-  return {
-    nomes,
-    aviso: temColunaMes ? null : "coluna mês não encontrada na planilha — roster sem recorte mensal",
-  };
+  // Dedup por nome
+  const nomes = [];
+  for (const c of selecionados) {
+    if (!nomes.some((n) => normName(n.nome) === normName(c.nome))) {
+      nomes.push({ nome: c.nome, cargo: c.cargo });
+    }
+  }
+
+  return { nomes, aviso };
 }
 
 // ── PIPEDRIVE ───────────────────────────────────────────────────────
@@ -321,7 +353,7 @@ app.get("/api/roster_debug", async (req, res) => {
       return fallback;
     };
     const iNome = idx(["nome"], 0);
-    const iTime = idx(["time", "equipe", "squad"], 2);
+    const iTime = idx(["subarea", "sub area", "squad"], 2);
     const iMes  = idx(["mes"], -1);
     const iAno  = idx(["ano"], -1);
 
@@ -524,6 +556,7 @@ app.post("/api/propostas", async (req, res) => {
 app.get("/api/health", (req, res) =>
   res.json({
     ok: true,
+    versao: "2026-07-20-SUBAREA-FIX",
     pipedrive: !!PIPEDRIVE_TOKEN,
     github: !!(GITHUB_TOKEN && GITHUB_REPO),
   })

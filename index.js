@@ -338,6 +338,56 @@ async function ghPutFile(json, sha) {
   }
 }
 
+// ── DEBUG: types reais e amostra de atividades ──────────────────────
+app.get("/api/tipos_debug", async (req, res) => {
+  try {
+    const dia = /^\d{4}-\d{2}-\d{2}$/.test(req.query.date || "")
+      ? req.query.date : todayBrt();
+    const ativGeral = await fetchActivitiesV2(FILTER_ATIV_GERAL);
+
+    // Contagem por type
+    const porTipo = {};
+    for (const a of ativGeral) {
+      const t = a.type || "(sem type)";
+      porTipo[t] = (porTipo[t] || 0) + 1;
+    }
+
+    // Amostra: 1 atividade de cada type, com os campos que o painel usa
+    const amostraPorTipo = {};
+    for (const a of ativGeral) {
+      const t = a.type || "(sem type)";
+      if (!amostraPorTipo[t]) {
+        amostraPorTipo[t] = {
+          type: a.type,
+          done: a.done,
+          status: a.status,
+          add_time: a.add_time,
+          add_time_brt: utcToBrtDateStr(a.add_time),
+          due_date: a.due_date,
+          due_date_puro: pureDate(a.due_date),
+          owner_id: a.owner_id,
+          user_id: a.user_id,
+        };
+      }
+    }
+
+    // Quantas atividades caem no dia por eixo
+    const noAddTime = ativGeral.filter((a) => utcToBrtDateStr(a.add_time) === dia).length;
+    const noDueDate = ativGeral.filter((a) => pureDate(a.due_date) === dia).length;
+
+    res.json({
+      dia,
+      total_atividades_filtro_1670288: ativGeral.length,
+      contagem_por_type: porTipo,
+      no_dia_por_add_time: noAddTime,
+      no_dia_por_due_date: noDueDate,
+      amostra_de_cada_type: amostraPorTipo,
+    });
+  } catch (err) {
+    res.status(500).json({ erro: String(err.message || err) });
+  }
+});
+
 // ── DEBUG DO ROSTER: raio-X da planilha ─────────────────────────────
 app.get("/api/roster_debug", async (req, res) => {
   try {

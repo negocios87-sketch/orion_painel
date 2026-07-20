@@ -347,9 +347,13 @@ app.get("/api/tipos_debug", async (req, res) => {
 
     // Contagem por type
     const porTipo = {};
+    const porTipoDone = {};
     for (const a of ativGeral) {
       const t = a.type || "(sem type)";
       porTipo[t] = (porTipo[t] || 0) + 1;
+      const chave = (a.done === true || a.status === "done") ? "done" : "aberto";
+      porTipoDone[t] = porTipoDone[t] || { done: 0, aberto: 0 };
+      porTipoDone[t][chave]++;
     }
 
     // Amostra: 1 atividade de cada type, com os campos que o painel usa
@@ -379,6 +383,7 @@ app.get("/api/tipos_debug", async (req, res) => {
       dia,
       total_atividades_filtro_1670288: ativGeral.length,
       contagem_por_type: porTipo,
+      done_vs_aberto_por_type: porTipoDone,
       no_dia_por_add_time: noAddTime,
       no_dia_por_due_date: noDueDate,
       amostra_de_cada_type: amostraPorTipo,
@@ -512,7 +517,7 @@ app.get("/api/dashboard", async (req, res) => {
       const addBrt = utcToBrtDateStr(a.add_time);
       const due = pureDate(a.due_date);
 
-      if (tipo === "whatsapp" && isDone(a) && addBrt === dia) acc[nome].wpp++;
+      if (tipo === "whatsapp_chat" && isDone(a) && addBrt === dia) acc[nome].wpp++;
       if (tipo === "call" && isDone(a) && addBrt === dia) acc[nome].call++;
       if (tipo === "meeting") {
         if (addBrt === dia) acc[nome].marcadas++;          // status independe

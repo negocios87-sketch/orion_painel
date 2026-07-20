@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
 // Board Academy — Painel Orion · Atividades & Taxa de Conexão (V1)
-// >>> VERSAO: 2026-07-20-V1-TEST <<<  (roster lê coluna Subarea)
+// >>> VERSAO: 2026-07-20-PROBE <<<  (roster lê coluna Subarea)
 // Backend Node/Express — deploy Vercel (serverless)
 //
 // Env vars obrigatórias (configurar no Vercel):
@@ -383,6 +383,38 @@ async function ghPutFile(json, sha) {
   }
 }
 
+// ── DEBUG: descobre como a v1 aceita o filtro de atividades ─────────
+app.get("/api/v1_probe", async (req, res) => {
+  const fid = FILTER_ATIV_GERAL;
+  const variantes = {
+    "filter_id+start": `https://api.pipedrive.com/v1/activities?filter_id=${fid}&api_token=${PIPEDRIVE_TOKEN}&limit=100&start=0`,
+    "filter_id+done0": `https://api.pipedrive.com/v1/activities?filter_id=${fid}&api_token=${PIPEDRIVE_TOKEN}&limit=100&done=0`,
+    "filter_id+done1": `https://api.pipedrive.com/v1/activities?filter_id=${fid}&api_token=${PIPEDRIVE_TOKEN}&limit=100&done=1`,
+    "collection":       `https://api.pipedrive.com/v1/activities/collection?filter_id=${fid}&api_token=${PIPEDRIVE_TOKEN}&limit=100`,
+    "v2_com_done_param": `https://api.pipedrive.com/api/v2/activities?filter_id=${fid}&limit=100&done=true`,
+  };
+  const out = {};
+  for (const [nome, url] of Object.entries(variantes)) {
+    const t0 = Date.now();
+    try {
+      const isV2 = url.includes("/api/v2/");
+      const r = await fetch(url, {
+        signal: AbortSignal.timeout(25000),
+        headers: isV2 ? { "x-api-token": PIPEDRIVE_TOKEN } : {},
+      });
+      const j = await r.json().catch(() => ({}));
+      out[nome] = {
+        http: r.status, ms: Date.now() - t0,
+        itens: (j.data || []).length,
+        tem_mais: !!(j.additional_data && (j.additional_data.pagination?.more_items_in_collection || j.additional_data.next_cursor)),
+      };
+    } catch (e) {
+      out[nome] = { ms: Date.now() - t0, erro: String(e.message || e).slice(0, 80) };
+    }
+  }
+  res.json(out);
+});
+
 // ── DEBUG: testa o 1670288 via v1 (alternativa ao v2 que trava) ─────
 app.get("/api/v1_test", async (req, res) => {
   const t0 = Date.now();
@@ -688,7 +720,7 @@ app.post("/api/propostas", async (req, res) => {
 app.get("/api/health", (req, res) =>
   res.json({
     ok: true,
-    versao: "2026-07-20-V1-TEST",
+    versao: "2026-07-20-PROBE",
     pipedrive: !!PIPEDRIVE_TOKEN,
     github: !!(GITHUB_TOKEN && GITHUB_REPO),
   })

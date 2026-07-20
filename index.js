@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
 // Board Academy — Painel Orion · Atividades & Taxa de Conexão (V1)
-// >>> VERSAO: 2026-07-20-PROBE <<<  (roster lê coluna Subarea)
+// >>> VERSAO: 2026-07-20-COLLECTION <<<  (roster lê coluna Subarea)
 // Backend Node/Express — deploy Vercel (serverless)
 //
 // Env vars obrigatórias (configurar no Vercel):
@@ -253,6 +253,35 @@ async function fetchActivitiesV2(filterId) {
   return out;
 }
 
+// v1 activities/collection — cursor rápido (resolve o filtro que trava na v2)
+async function fetchActivitiesCollection(filterId) {
+  const out = [];
+  let cursor = 0, paginas = 0;
+  while (true) {
+    paginas++;
+    if (paginas > MAX_PAGINAS) {
+      throw new Error(
+        `Filtro ${filterId} (collection) estourou ${MAX_PAGINAS} páginas (${out.length}+). Verificar filtro.`
+      );
+    }
+    const p = new URLSearchParams({
+      filter_id: filterId,
+      api_token: PIPEDRIVE_TOKEN,
+      limit: "500",
+      cursor: String(cursor),
+    });
+    const r = await pipeFetch("https://api.pipedrive.com/v1/activities/collection?" + p.toString());
+    if (!r.ok) throw new Error("Collection filtro " + filterId + ": HTTP " + r.status);
+    const data = await r.json();
+    out.push(...(data.data || []));
+    const nc = data.additional_data && data.additional_data.next_cursor;
+    if (nc === null || nc === undefined || nc === "") break;
+    cursor = nc;
+  }
+  out._paginas = paginas;
+  return out;
+}
+
 // v1 activities — start pagination (API v1 é mais tolerante com filtros pesados)
 async function fetchActivitiesV1(filterId) {
   const out = [];
@@ -382,6 +411,38 @@ async function ghPutFile(json, sha) {
     throw new Error("GitHub PUT: HTTP " + r.status + " · " + txt.slice(0, 200));
   }
 }
+
+// ── DEBUG: valida o collection completo (total, types, campos) ──────
+app.get("/api/collection_test", async (req, res) => {
+  const t0 = Date.now();
+  try {
+    const ativ = await fetchActivitiesCollection(FILTER_ATIV_GERAL);
+    const porTipo = {}, amostra = {};
+    let semDue = 0, semOwner = 0, semType = 0;
+    for (const a of ativ) {
+      const t = a.type || "(sem type)";
+      porTipo[t] = (porTipo[t] || 0) + 1;
+      if (!a.due_date) semDue++;
+      if (!(a.owner_id || a.user_id)) semOwner++;
+      if (!a.type) semType++;
+      if (!amostra[t]) {
+        amostra[t] = {
+          type: a.type, done: a.done, status: a.status,
+          add_time: a.add_time, due_date: a.due_date,
+          owner_id: a.owner_id, user_id: a.user_id,
+        };
+      }
+    }
+    res.json({
+      ok: true, ms: Date.now() - t0, total: ativ.length, paginas: ativ._paginas,
+      contagem_por_type: porTipo,
+      campos_faltando: { sem_due_date: semDue, sem_owner: semOwner, sem_type: semType },
+      amostra_de_cada_type: amostra,
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, ms: Date.now() - t0, erro: String(err.message || err) });
+  }
+});
 
 // ── DEBUG: descobre como a v1 aceita o filtro de atividades ─────────
 app.get("/api/v1_probe", async (req, res) => {
@@ -720,7 +781,7 @@ app.post("/api/propostas", async (req, res) => {
 app.get("/api/health", (req, res) =>
   res.json({
     ok: true,
-    versao: "2026-07-20-PROBE",
+    versao: "2026-07-20-COLLECTION",
     pipedrive: !!PIPEDRIVE_TOKEN,
     github: !!(GITHUB_TOKEN && GITHUB_REPO),
   })

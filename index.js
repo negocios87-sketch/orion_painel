@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
 // Board Academy — Painel Orion · Atividades & Taxa de Conexão (V1)
-// >>> VERSAO: 2026-07-20-FCHECK <<<  (roster lê coluna Subarea)
+// >>> VERSAO: 2026-07-20-DATATEST <<<  (roster lê coluna Subarea)
 // Backend Node/Express — deploy Vercel (serverless)
 //
 // Env vars obrigatórias (configurar no Vercel):
@@ -413,6 +413,44 @@ async function ghPutFile(json, sha) {
   }
 }
 
+// ── DEBUG: v2 filtrando por data nativa (sem filter_id problemático) ─
+app.get("/api/data_test", async (req, res) => {
+  const dia = /^\d{4}-\d{2}-\d{2}$/.test(req.query.date || "") ? req.query.date : todayBrt();
+  async function pega(url, label) {
+    const t0 = Date.now();
+    try {
+      const r = await fetch(url, {
+        signal: AbortSignal.timeout(25000),
+        headers: { "x-api-token": PIPEDRIVE_TOKEN },
+      });
+      const j = await r.json().catch(() => ({}));
+      const itens = j.data || [];
+      const porTipo = {};
+      for (const a of itens) porTipo[a.type || "?"] = (porTipo[a.type || "?"] || 0) + 1;
+      return {
+        label, http: r.status, ms: Date.now() - t0, itens: itens.length,
+        tem_mais: !!(j.additional_data && j.additional_data.next_cursor),
+        por_tipo: porTipo,
+        amostra: itens.slice(0, 3).map((a) => ({
+          type: a.type, done: a.done, add: a.add_time, due: a.due_date,
+          owner: a.owner_id,
+        })),
+      };
+    } catch (e) {
+      return { label, erro: String(e.message || e).slice(0, 100) };
+    }
+  }
+  // v2 aceita filtros de data por parâmetro: due_date (range) e updated_since
+  const b = "https://api.pipedrive.com/api/v2/activities?limit=100";
+  const out = {
+    dia,
+    por_due_date: await pega(`${b}&due_date=${dia}`, "v2 due_date exato"),
+    por_range_due: await pega(`${b}&due_date_start=${dia}&due_date_end=${dia}`, "v2 due_date range"),
+    por_updated: await pega(`${b}&updated_since=${dia}T00:00:00Z`, "v2 updated_since"),
+  };
+  res.json(out);
+});
+
 // ── DEBUG: o collection respeita o filter_id? ───────────────────────
 app.get("/api/filtro_check", async (req, res) => {
   async function pega(url, label) {
@@ -813,7 +851,7 @@ app.post("/api/propostas", async (req, res) => {
 app.get("/api/health", (req, res) =>
   res.json({
     ok: true,
-    versao: "2026-07-20-FCHECK",
+    versao: "2026-07-20-DATATEST",
     pipedrive: !!PIPEDRIVE_TOKEN,
     github: !!(GITHUB_TOKEN && GITHUB_REPO),
   })

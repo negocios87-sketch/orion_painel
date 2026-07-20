@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
 // Board Academy — Painel Orion · Atividades & Taxa de Conexão (V1)
-// >>> VERSAO: 2026-07-20-COLL2 <<<  (roster lê coluna Subarea)
+// >>> VERSAO: 2026-07-20-COLL3 <<<  (roster lê coluna Subarea)
 // Backend Node/Express — deploy Vercel (serverless)
 //
 // Env vars obrigatórias (configurar no Vercel):
@@ -257,11 +257,12 @@ async function fetchActivitiesV2(filterId) {
 async function fetchActivitiesCollection(filterId) {
   const out = [];
   let cursor = null, paginas = 0;
+  const TETO_COLLECTION = 200; // 200 págs × 100 = 20 mil atividades de folga
   while (true) {
     paginas++;
-    if (paginas > MAX_PAGINAS) {
+    if (paginas > TETO_COLLECTION) {
       throw new Error(
-        `Filtro ${filterId} (collection) estourou ${MAX_PAGINAS} páginas (${out.length}+). Verificar filtro.`
+        `Filtro ${filterId} (collection) passou de ${TETO_COLLECTION * 100} atividades. Filtro sem recorte de data no Pipedrive?`
       );
     }
     const p = new URLSearchParams({
@@ -781,7 +782,7 @@ app.post("/api/propostas", async (req, res) => {
 app.get("/api/health", (req, res) =>
   res.json({
     ok: true,
-    versao: "2026-07-20-COLL2",
+    versao: "2026-07-20-COLL3",
     pipedrive: !!PIPEDRIVE_TOKEN,
     github: !!(GITHUB_TOKEN && GITHUB_REPO),
   })

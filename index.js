@@ -677,6 +677,54 @@ app.post("/api/jornada", async (req, res) => {
   }
 });
 
+
+// ── DEBUG: leads do dia (1670292) têm atividade no 1670288? ─────────
+app.get("/api/sla_debug", async (req, res) => {
+  try {
+    const dia = /^\d{4}-\d{2}-\d{2}$/.test(req.query.date || "") ? req.query.date : todayBrt();
+    const [dealsLeads, ativGeral, users] = await Promise.all([
+      fetchDealsV1(FILTER_DEALS_WON),
+      fetchActivitiesV2(FILTER_ATIV_GERAL),
+      fetchUsers(),
+    ]);
+    // leads que entraram no dia
+    const leadsDoDia = dealsLeads.filter(d => utcToBrtDateStr(d.add_time) === dia);
+    // index de atividades wpp/call done por deal_id
+    const ativPorDeal = {};
+    for (const a of ativGeral) {
+      if (!(a.type === "call" || a.type === "whatsapp_chat")) continue;
+      if (!(a.done === true || a.status === "done")) continue;
+      const did = a.deal_id;
+      if (!did) continue;
+      (ativPorDeal[did] = ativPorDeal[did] || []).push(a);
+    }
+    let comAtividade = 0, semAtividade = 0;
+    const amostra = [];
+    for (const d of leadsDoDia) {
+      const ats = ativPorDeal[d.id] || [];
+      if (ats.length) comAtividade++; else semAtividade++;
+      if (amostra.length < 8) {
+        amostra.push({
+          deal_id: d.id,
+          add_time: d.add_time,
+          entrada_brt: utcToBrtDateStr(d.add_time),
+          atividades_no_1670288: ats.length,
+          primeira_done: ats.length ? ats.map(a=>a.marked_as_done_time).sort()[0] : null,
+        });
+      }
+    }
+    res.json({
+      dia,
+      total_leads_dia: leadsDoDia.length,
+      leads_com_atividade_no_1670288: comAtividade,
+      leads_sem_atividade_no_1670288: semAtividade,
+      amostra,
+    });
+  } catch (err) {
+    res.status(500).json({ erro: String(err.message || err) });
+  }
+});
+
 app.get("/api/health", (req, res) =>
   res.json({
     ok: true,

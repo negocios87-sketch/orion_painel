@@ -134,6 +134,24 @@
         "quem": "Todos",
         "inicio": "16:00",
         "fim": "17:00"
+      },
+      {
+        "tipo": "Almoço",
+        "quem": "Ollavo Costa",
+        "inicio": "12:31",
+        "fim": "13:37"
+      },
+      {
+        "tipo": "Almoço",
+        "quem": "Leonardo Dutra",
+        "inicio": "13:23",
+        "fim": "14:22"
+      },
+      {
+        "tipo": "Almoço",
+        "quem": "Gabriela Turetta",
+        "inicio": "14:09",
+        "fim": "14:48"
       }
     ]
   }

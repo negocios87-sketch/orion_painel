@@ -92,6 +92,24 @@
         "quem": "Leonardo Dutra",
         "inicio": "15:00",
         "fim": "15:30"
+      },
+      {
+        "tipo": "Almoço",
+        "quem": "Ollavo Costa",
+        "inicio": "12:15",
+        "fim": "13:21"
+      },
+      {
+        "tipo": "Almoço",
+        "quem": "Leonardo Dutra",
+        "inicio": "13:10",
+        "fim": "14:21"
+      },
+      {
+        "tipo": "Almoço",
+        "quem": "Gabriela Turetta",
+        "inicio": "13:15",
+        "fim": "14:15"
       }
     ]
   },

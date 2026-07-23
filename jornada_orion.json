@@ -140,6 +140,30 @@
         "quem": "Todos",
         "inicio": "09:15",
         "fim": "09:50"
+      },
+      {
+        "tipo": "Reunião com Cliente",
+        "quem": "Gabriela Turetta",
+        "inicio": "16:00",
+        "fim": "17:00"
+      },
+      {
+        "tipo": "Almoço",
+        "quem": "Gabriela Turetta",
+        "inicio": "13:20",
+        "fim": "14:38"
+      },
+      {
+        "tipo": "Almoço",
+        "quem": "Leonardo Dutra",
+        "inicio": "13:40",
+        "fim": "14:49"
+      },
+      {
+        "tipo": "Almoço",
+        "quem": "Ollavo Costa",
+        "inicio": "12:25",
+        "fim": "13:30"
       }
     ]
   },

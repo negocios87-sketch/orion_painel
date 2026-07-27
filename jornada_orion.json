@@ -164,6 +164,12 @@
         "quem": "Ollavo Costa",
         "inicio": "12:25",
         "fim": "13:30"
+      },
+      {
+        "tipo": "Reunião com Cliente",
+        "quem": "Leonardo Dutra",
+        "inicio": "15:00",
+        "fim": "16:00"
       }
     ]
   },

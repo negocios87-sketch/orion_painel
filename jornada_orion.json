@@ -374,6 +374,37 @@
         "fim": "18:00"
       }
     },
-    "impactos": []
+    "impactos": [
+      {
+        "tipo": "Daily",
+        "quem": "Todos",
+        "inicio": "09:15",
+        "fim": "09:40"
+      },
+      {
+        "tipo": "Almoço",
+        "quem": "Ollavo Costa",
+        "inicio": "12:03",
+        "fim": "13:20"
+      },
+      {
+        "tipo": "Almoço",
+        "quem": "Gabriela Turetta",
+        "inicio": "13:43",
+        "fim": "14:56"
+      },
+      {
+        "tipo": "Almoço",
+        "quem": "Leonardo Dutra",
+        "inicio": "14:47",
+        "fim": "15:50"
+      },
+      {
+        "tipo": "Reunião com Gestão",
+        "quem": "Ollavo Costa",
+        "inicio": "16:40",
+        "fim": "17:00"
+      }
+    ]
   }
 }

@@ -440,6 +440,24 @@
         "quem": "Leonardo Dutra",
         "inicio": "10:00",
         "fim": "11:00"
+      },
+      {
+        "tipo": "Almoço",
+        "quem": "Gabriela Turetta",
+        "inicio": "13:21",
+        "fim": "14:06"
+      },
+      {
+        "tipo": "Almoço",
+        "quem": "Leonardo Dutra",
+        "inicio": "13:52",
+        "fim": "16:20"
+      },
+      {
+        "tipo": "Almoço",
+        "quem": "Ollavo Costa",
+        "inicio": "13:30",
+        "fim": "14:35"
       }
     ]
   }

@@ -502,5 +502,47 @@
         "fim": "10:40"
       }
     ]
+  },
+  "2026-07-31": {
+    "expediente": {
+      "Gabriela Turetta": {
+        "inicio": "09:00",
+        "fim": "18:00"
+      },
+      "Ollavo Costa": {
+        "inicio": "09:00",
+        "fim": "18:00"
+      },
+      "Leonardo Dutra": {
+        "inicio": "09:00",
+        "fim": "18:00"
+      }
+    },
+    "impactos": [
+      {
+        "tipo": "Daily",
+        "quem": "Todos",
+        "inicio": "09:00",
+        "fim": "09:20"
+      },
+      {
+        "tipo": "Almoço",
+        "quem": "Gabriela Turetta",
+        "inicio": "",
+        "fim": ""
+      },
+      {
+        "tipo": "Almoço",
+        "quem": "Leonardo Dutra",
+        "inicio": "",
+        "fim": ""
+      },
+      {
+        "tipo": "Almoço",
+        "quem": "Ollavo Costa",
+        "inicio": "",
+        "fim": ""
+      }
+    ]
   }
 }

@@ -528,20 +528,32 @@
       {
         "tipo": "Almoço",
         "quem": "Gabriela Turetta",
-        "inicio": "",
-        "fim": ""
+        "inicio": "14:00",
+        "fim": "15:05"
       },
       {
         "tipo": "Almoço",
         "quem": "Leonardo Dutra",
-        "inicio": "",
-        "fim": ""
+        "inicio": "13:20",
+        "fim": "14:21"
       },
       {
         "tipo": "Almoço",
         "quem": "Ollavo Costa",
-        "inicio": "",
-        "fim": ""
+        "inicio": "12:10",
+        "fim": "13:16"
+      },
+      {
+        "tipo": "Reunião com Cliente",
+        "quem": "Gabriela Turetta",
+        "inicio": "16:00",
+        "fim": "17:00"
+      },
+      {
+        "tipo": "Reunião com Cliente",
+        "quem": "Ollavo Costa",
+        "inicio": "16:00",
+        "fim": "17:00"
       }
     ]
   }

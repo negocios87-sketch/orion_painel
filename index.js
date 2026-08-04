@@ -1241,6 +1241,63 @@ app.get("/api/etapas_debug", async (req, res) => {
   }
 });
 
+
+// ── DEBUG: conexão lead a lead (por que não conta?) ─────────────────
+app.get("/api/conexao_debug", async (req, res) => {
+  try {
+    const dia = /^\d{4}-\d{2}-\d{2}$/.test(req.query.date || "") ? req.query.date : todayBrt();
+    const [roster, users, dealsWon, stages] = await Promise.all([
+      fetchRoster(), fetchUsers(), fetchDealsV1(FILTER_DEALS_WON), fetchStages().catch(()=>({})),
+    ]);
+    const rosterIdx = {};
+    for (const p of roster.nomes) rosterIdx[normName(p.nome)] = p.nome;
+    const resolve = (uid) => {
+      const nomePd = users[uid];
+      if (!nomePd) return null;
+      return rosterIdx[normName(nomePd)] || null;
+    };
+    const ehConexao = (nomeEtapa) => {
+      const n = normName(nomeEtapa);
+      if (!n) return false;
+      if (n.startsWith("aplicac")) return false;
+      if (n.startsWith("reabertura")) return false;
+      if (/^etapa\s*[123]$/.test(n)) return false;
+      if (n.startsWith("tentativa")) return false;
+      return true;
+    };
+    const [anoSel, mesSel] = dia.split("-").map(Number);
+    const noMes = (iso) => { if(!iso) return false; const [a,m]=String(iso).split("-").map(Number); return a===anoSel&&m===mesSel; };
+
+    // total de stages retornados
+    const stagesCount = Object.keys(stages).length;
+
+    // deals criados no mês, com detalhe
+    const detalhe = [];
+    for (const d of dealsWon) {
+      if (!noMes(utcToBrtDateStr(d.add_time))) continue;
+      const uid = d.user_id && typeof d.user_id === "object" ? d.user_id.id : d.user_id;
+      const nome = resolve(uid);
+      if (!nome) continue;
+      const nomeEtapa = stages[d.stage_id];
+      detalhe.push({
+        deal_id: d.id, titulo: d.title, owner: nome,
+        stage_id: d.stage_id,
+        etapa_resolvida: nomeEtapa || "(SEM NOME - stage_id não está no fetchStages)",
+        eh_conexao: ehConexao(nomeEtapa || ""),
+        pipeline_id: d.pipeline_id,
+      });
+    }
+    res.json({
+      dia,
+      total_stages_no_fetchStages: stagesCount,
+      total_leads_criados_no_mes: detalhe.length,
+      detalhe,
+    });
+  } catch (err) {
+    res.status(500).json({ erro: String(err.message || err), trace: String(err.stack||"") });
+  }
+});
+
 app.get("/api/health", (req, res) =>
   res.json({
     ok: true,

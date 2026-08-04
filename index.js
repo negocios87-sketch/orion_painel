@@ -1154,6 +1154,50 @@ app.get("/api/sla_debug", async (req, res) => {
 
 
 
+
+// ── DEBUG: etapas do funil + distribuição dos deals (1670292) ───────
+app.get("/api/etapas_debug", async (req, res) => {
+  try {
+    const [deals, stages] = await Promise.all([
+      fetchDealsV1(FILTER_DEALS_WON),
+      fetchStages().catch(() => ({})),
+    ]);
+    // distribuição de deals por etapa
+    const porEtapa = {};
+    for (const d of deals) {
+      const nomeEtapa = stages[d.stage_id] || ("stage_id " + d.stage_id);
+      const chave = d.stage_id + " · " + nomeEtapa;
+      porEtapa[chave] = (porEtapa[chave] || 0) + 1;
+    }
+    // distribuição por status também (open/won/lost)
+    const porStatus = {};
+    for (const d of deals) {
+      const st = d.status || "(sem status)";
+      porStatus[st] = (porStatus[st] || 0) + 1;
+    }
+    // amostra de deals com os campos relevantes
+    const amostra = deals.slice(0, 10).map(d => ({
+      id: d.id,
+      titulo: d.title,
+      stage_id: d.stage_id,
+      etapa: stages[d.stage_id] || null,
+      status: d.status,
+      add_time: d.add_time,
+      stage_change_time: d.stage_change_time,
+      pipeline_id: d.pipeline_id,
+    }));
+    res.json({
+      total_deals: deals.length,
+      todas_as_etapas: stages,
+      distribuicao_por_etapa: porEtapa,
+      distribuicao_por_status: porStatus,
+      amostra_deals: amostra,
+    });
+  } catch (err) {
+    res.status(500).json({ erro: String(err.message || err) });
+  }
+});
+
 app.get("/api/health", (req, res) =>
   res.json({
     ok: true,

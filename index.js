@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
 // Board Academy — Painel Orion · Atividades & Taxa de Conexão (V1)
-// >>> VERSAO: 2026-08-04-CONEXAO <<<  (roster lê coluna Subarea)
+// >>> VERSAO: 2026-08-04-CONEXAO2 <<<  (roster lê coluna Subarea)
 // Backend Node/Express — deploy Vercel (serverless)
 //
 // Env vars obrigatórias (configurar no Vercel):
@@ -375,13 +375,24 @@ async function fetchUsers() {
 }
 
 async function fetchStages() {
-  const r = await pipeFetch(
-    "https://api.pipedrive.com/v1/stages?api_token=" + PIPEDRIVE_TOKEN
-  );
-  if (!r.ok) throw new Error("Stages: HTTP " + r.status);
-  const data = await r.json();
   const map = {};
-  for (const s of data.data || []) map[s.id] = s.name;
+  let start = 0;
+  // v1 paginado: pega TODAS as etapas de TODOS os pipelines (inclui inativos)
+  while (true) {
+    const url =
+      "https://api.pipedrive.com/v1/stages?api_token=" + PIPEDRIVE_TOKEN +
+      "&limit=500&start=" + start;
+    const r = await pipeFetch(url);
+    if (!r.ok) throw new Error("Stages: HTTP " + r.status);
+    const data = await r.json();
+    for (const s of data.data || []) map[s.id] = s.name;
+    const more = data.additional_data &&
+      data.additional_data.pagination &&
+      data.additional_data.pagination.more_items_in_collection;
+    if (!more) break;
+    start += 500;
+    if (start > 5000) break; // trava de segurança
+  }
   return map;
 }
 
@@ -1270,6 +1281,9 @@ app.get("/api/conexao_debug", async (req, res) => {
 
     // total de stages retornados
     const stagesCount = Object.keys(stages).length;
+    const tem307 = !!stages[307];
+    const tem685 = !!stages[685];
+    const idsDisponiveis = Object.keys(stages).map(Number).sort((a,b)=>a-b);
 
     // deals criados no mês, com detalhe
     const detalhe = [];
@@ -1290,6 +1304,9 @@ app.get("/api/conexao_debug", async (req, res) => {
     res.json({
       dia,
       total_stages_no_fetchStages: stagesCount,
+      tem_stage_307: tem307,
+      tem_stage_685: tem685,
+      ids_disponiveis: idsDisponiveis,
       total_leads_criados_no_mes: detalhe.length,
       detalhe,
     });
@@ -1301,7 +1318,7 @@ app.get("/api/conexao_debug", async (req, res) => {
 app.get("/api/health", (req, res) =>
   res.json({
     ok: true,
-    versao: "2026-08-04-CONEXAO",
+    versao: "2026-08-04-CONEXAO2",
     pipedrive: !!PIPEDRIVE_TOKEN,
     github: !!(GITHUB_TOKEN && GITHUB_REPO),
   })

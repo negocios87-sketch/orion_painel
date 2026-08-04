@@ -1133,6 +1133,49 @@ app.get("/api/sla_debug", async (req, res) => {
   }
 });
 
+
+// ── DEBUG: tipos de atividade + subject de email + no-show ──────────
+app.get("/api/tipos_ativ_debug", async (req, res) => {
+  try {
+    const dia = /^\d{4}-\d{2}-\d{2}$/.test(req.query.date || "") ? req.query.date : todayBrt();
+    const ativ = await fetchActivitiesV2(FILTER_ATIV_GERAL);
+    const porTipo = {};
+    for (const a of ativ) {
+      const t = a.type || "(sem type)";
+      porTipo[t] = (porTipo[t] || 0) + 1;
+    }
+    const amostra = {};
+    for (const a of ativ) {
+      const t = a.type || "(sem type)";
+      if (!amostra[t]) {
+        amostra[t] = {
+          type: a.type, subject: a.subject, done: a.done,
+          deal_id: a.deal_id, add_time: a.add_time, due_date: a.due_date,
+          marked_as_done_time: a.marked_as_done_time,
+        };
+      }
+    }
+    const emailsSubjects = ativ
+      .filter(a => a.type === "email")
+      .slice(0, 15)
+      .map(a => ({ subject: a.subject, done: a.done, add: a.add_time }));
+    const possiveisNoShow = Object.keys(porTipo).filter(t =>
+      /no.?show|noshow|falta|ausen/i.test(t)
+    );
+    res.json({
+      dia,
+      total: ativ.length,
+      contagem_por_type: porTipo,
+      tem_email: !!porTipo["email"],
+      possiveis_tipos_noshow: possiveisNoShow,
+      amostra_de_cada_type: amostra,
+      emails_subjects: emailsSubjects,
+    });
+  } catch (err) {
+    res.status(500).json({ erro: String(err.message || err) });
+  }
+});
+
 app.get("/api/health", (req, res) =>
   res.json({
     ok: true,
